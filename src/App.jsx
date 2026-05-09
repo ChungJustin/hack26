@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bell, MapPin, Sparkles, UserCircle2 } from 'lucide-react'
+import { Bell, MapPin, Search, Sparkles, UserCheck, UserCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   loadGroupsPayload,
@@ -37,11 +37,29 @@ function formatDistanceLine(group) {
   return parts.join(' · ')
 }
 
-function GroupAttendeeList({ groupId, seedAttendeeUserIds, currentUserId }) {
+function isCurrentUserAttendingGroup(group, currentUserId) {
+  const uid = String(currentUserId ?? '').trim()
+  if (!uid || !group?.id) return false
+  return getAttendeeUserIdsForGroup(group.id, group.attendeeUserIds).includes(uid)
+}
+
+function GroupAttendeeList({ groupId, seedAttendeeUserIds, currentUserId, attendingHighlight }) {
   const ids = getAttendeeUserIdsForGroup(groupId, seedAttendeeUserIds)
   if (ids.length === 0) return null
   return (
-    <div className="mt-3 rounded-2xl border border-orange-100 bg-orange-50/70 px-3 py-2.5 text-sm">
+    <div
+      className={`mt-3 rounded-2xl border px-3 py-2.5 text-sm ${
+        attendingHighlight ?
+          'border-primary/45 bg-primary/[0.07] shadow-sm shadow-primary/10'
+        : 'border-orange-100 bg-orange-50/70'
+      }`}
+    >
+      {attendingHighlight ? (
+        <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-primary">
+          <UserCheck size={15} aria-hidden />
+          내가 참석 중인 모임이에요
+        </p>
+      ) : null}
       <p className="font-semibold text-orange-950">
         참석 중인 식구 <span className="font-bold text-primary">{ids.length}</span>명
       </p>
@@ -793,12 +811,25 @@ function App() {
                       {aiRecItems.map((item) => {
                         const g = feedGroups.find((x) => x.id === item.id)
                         if (!g) return null
+                        const imAttending = isCurrentUserAttendingGroup(g, userId)
                         return (
                           <li
                             key={item.id}
-                            className="rounded-2xl border border-orange-100 bg-white/90 p-4 shadow-sm"
+                            className={`rounded-2xl p-4 shadow-sm ${
+                              imAttending ?
+                                'border-2 border-primary/45 bg-gradient-to-b from-orange-50/95 to-white ring-1 ring-primary/15'
+                              : 'border border-orange-100 bg-white/90'
+                            }`}
                           >
-                            <p className="font-bold text-orange-950">{g.title}</p>
+                            <div className="flex flex-wrap items-start justify-between gap-2">
+                              <p className="font-bold text-orange-950">{g.title}</p>
+                              {imAttending ? (
+                                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
+                                  <UserCheck size={14} aria-hidden />
+                                  참석 중
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="mt-1 text-sm text-orange-900/80">{item.reason}</p>
                             {formatDistanceLine(g) ? (
                               <p className="mt-2 text-xs text-orange-900/60">{formatDistanceLine(g)}</p>
@@ -807,7 +838,40 @@ function App() {
                               groupId={g.id}
                               seedAttendeeUserIds={g.attendeeUserIds}
                               currentUserId={userId}
+                              attendingHighlight={imAttending}
                             />
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleJoinGroup(g.id)}
+                                className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+                                  joinedGroupIds.includes(g.id)
+                                    ? 'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
+                                    : imAttending ?
+                                      'border-2 border-primary/40 bg-white text-primary hover:bg-orange-50'
+                                    : 'bg-orange-950 text-white hover:bg-primary'
+                                }`}
+                              >
+                                {joinedGroupIds.includes(g.id) ?
+                                  '참석 중 · 취소'
+                                : imAttending ?
+                                  '앱에도 참여 등록하기'
+                                : '참여하기'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveFeedTab('전체')
+                                  const q = String(g.title ?? '').trim()
+                                  setFeedSearchInput(q)
+                                  setFeedSearchApplied(q)
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-white px-4 py-2 text-sm font-semibold text-orange-950 hover:bg-orange-50"
+                              >
+                                <Search size={16} aria-hidden />
+                                검색창에 넣고 피드에서 찾기
+                              </button>
+                            </div>
                           </li>
                         )
                       })}
@@ -849,42 +913,64 @@ function App() {
                           : '이 카테고리에 표시할 그룹이 없어요.'}
                       </p>
                     ) : (
-                      filteredGroups.map((group) => (
-                        <article
-                          key={group.id}
-                          className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
-                        >
-                          <div className="mb-2 flex items-start justify-between gap-2">
-                            <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
-                            <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
-                              {group.tag}
-                            </span>
-                          </div>
-                          {formatDistanceLine(group) ? (
-                            <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-orange-900/80">
-                              <MapPin className="shrink-0 text-primary" size={16} aria-hidden />
-                              <span>{formatDistanceLine(group)}</span>
-                            </div>
-                          ) : null}
-                          <p className="mb-4 text-orange-900/75">{group.body}</p>
-                          <GroupAttendeeList
-                            groupId={group.id}
-                            seedAttendeeUserIds={group.attendeeUserIds}
-                            currentUserId={userId}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleToggleJoinGroup(group.id)}
-                            className={`mt-3 rounded-full px-5 py-2 text-sm font-bold transition ${
-                              joinedGroupIds.includes(group.id)
-                                ? 'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
-                                : 'bg-orange-950 text-white hover:bg-primary'
+                      filteredGroups.map((group) => {
+                        const imAttending = isCurrentUserAttendingGroup(group, userId)
+                        return (
+                          <article
+                            key={group.id}
+                            className={`rounded-3xl p-5 shadow-sm ${
+                              imAttending ?
+                                'border-2 border-primary/45 bg-gradient-to-b from-orange-50/95 to-white ring-1 ring-primary/15'
+                              : 'border border-orange-100 bg-white'
                             }`}
                           >
-                            {joinedGroupIds.includes(group.id) ? '참석 중 · 취소하려면 누르기' : '참여하기'}
-                          </button>
-                        </article>
-                      ))
+                            <div className="mb-2 flex items-start justify-between gap-2">
+                              <h3 className="min-w-0 flex-1 text-lg font-bold text-orange-950">{group.title}</h3>
+                              <div className="flex shrink-0 flex-col items-end gap-1.5">
+                                {imAttending ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
+                                    <UserCheck size={14} aria-hidden />
+                                    참석 중
+                                  </span>
+                                ) : null}
+                                <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
+                                  {group.tag}
+                                </span>
+                              </div>
+                            </div>
+                            {formatDistanceLine(group) ? (
+                              <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-orange-900/80">
+                                <MapPin className="shrink-0 text-primary" size={16} aria-hidden />
+                                <span>{formatDistanceLine(group)}</span>
+                              </div>
+                            ) : null}
+                            <p className="mb-4 text-orange-900/75">{group.body}</p>
+                            <GroupAttendeeList
+                              groupId={group.id}
+                              seedAttendeeUserIds={group.attendeeUserIds}
+                              currentUserId={userId}
+                              attendingHighlight={imAttending}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleToggleJoinGroup(group.id)}
+                              className={`mt-3 rounded-full px-5 py-2 text-sm font-bold transition ${
+                                joinedGroupIds.includes(group.id)
+                                  ? 'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
+                                  : imAttending ?
+                                    'border-2 border-primary/40 bg-white text-primary hover:bg-orange-50'
+                                  : 'bg-orange-950 text-white hover:bg-primary'
+                              }`}
+                            >
+                              {joinedGroupIds.includes(group.id) ?
+                                '참석 중 · 취소하려면 누르기'
+                              : imAttending ?
+                                '앱에도 참여 등록하기'
+                              : '참여하기'}
+                            </button>
+                          </article>
+                        )
+                      })
                     )}
                   </div>
                 )}
@@ -913,16 +999,24 @@ function App() {
                   </p>
                 ) : (
                   <div className="grid gap-4">
-                    {joinedGroupsOrdered.map((group) => (
-                      <article
+                    {joinedGroupsOrdered.map((group) => {
+                      const imAttending = isCurrentUserAttendingGroup(group, userId)
+                      return (
+                        <article
                         key={group.id}
-                        className="rounded-3xl border border-primary/30 bg-gradient-to-b from-orange-50/80 to-white p-5 shadow-sm"
+                        className="rounded-3xl border-2 border-primary/35 bg-gradient-to-b from-orange-50/90 to-white p-5 shadow-md ring-1 ring-primary/10"
                       >
                         <div className="mb-2 flex items-start justify-between gap-2">
-                          <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
-                          <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                            참석 예정
-                          </span>
+                          <h3 className="min-w-0 flex-1 text-lg font-bold text-orange-950">{group.title}</h3>
+                          <div className="flex shrink-0 flex-col items-end gap-1.5">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
+                              <UserCheck size={14} aria-hidden />
+                              참석 중
+                            </span>
+                            <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+                              참석 예정
+                            </span>
+                          </div>
                         </div>
                         {formatDistanceLine(group) ? (
                           <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-orange-900/80">
@@ -935,6 +1029,7 @@ function App() {
                           groupId={group.id}
                           seedAttendeeUserIds={group.attendeeUserIds}
                           currentUserId={userId}
+                          attendingHighlight={imAttending}
                         />
                         <button
                           type="button"
@@ -944,7 +1039,8 @@ function App() {
                           참여 취소
                         </button>
                       </article>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </>
