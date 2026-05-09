@@ -37,8 +37,8 @@ function formatDistanceLine(group) {
   return parts.join(' · ')
 }
 
-function GroupAttendeeList({ groupId, currentUserId }) {
-  const ids = getAttendeeUserIdsForGroup(groupId)
+function GroupAttendeeList({ groupId, seedAttendeeUserIds, currentUserId }) {
+  const ids = getAttendeeUserIdsForGroup(groupId, seedAttendeeUserIds)
   if (ids.length === 0) return null
   return (
     <div className="mt-3 rounded-2xl border border-orange-100 bg-orange-50/70 px-3 py-2.5 text-sm">
@@ -803,7 +803,11 @@ function App() {
                             {formatDistanceLine(g) ? (
                               <p className="mt-2 text-xs text-orange-900/60">{formatDistanceLine(g)}</p>
                             ) : null}
-                            <GroupAttendeeList groupId={g.id} currentUserId={userId} />
+                            <GroupAttendeeList
+                              groupId={g.id}
+                              seedAttendeeUserIds={g.attendeeUserIds}
+                              currentUserId={userId}
+                            />
                           </li>
                         )
                       })}
@@ -863,7 +867,11 @@ function App() {
                             </div>
                           ) : null}
                           <p className="mb-4 text-orange-900/75">{group.body}</p>
-                          <GroupAttendeeList groupId={group.id} currentUserId={userId} />
+                          <GroupAttendeeList
+                            groupId={group.id}
+                            seedAttendeeUserIds={group.attendeeUserIds}
+                            currentUserId={userId}
+                          />
                           <button
                             type="button"
                             onClick={() => handleToggleJoinGroup(group.id)}
@@ -923,7 +931,11 @@ function App() {
                           </div>
                         ) : null}
                         <p className="mb-4 text-orange-900/75">{group.body}</p>
-                        <GroupAttendeeList groupId={group.id} currentUserId={userId} />
+                        <GroupAttendeeList
+                          groupId={group.id}
+                          seedAttendeeUserIds={group.attendeeUserIds}
+                          currentUserId={userId}
+                        />
                         <button
                           type="button"
                           onClick={() => handleToggleJoinGroup(group.id)}

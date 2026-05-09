@@ -157,16 +157,28 @@ export function toggleJoinedGroupForUser(userId, groupId) {
   return list
 }
 
-/** 이 브라우저에 저장된 참여 기록 기준, 해당 그룹에 참석 신청한 아이디 목록 */
-export function getAttendeeUserIdsForGroup(groupId) {
+/**
+ * mock `groups.json`의 attendeeUserIds와, 이 브라우저 localStorage 참여 기록을 합친 목록
+ * @param {string[] | undefined} seedUserIds 그룹 객체의 attendeeUserIds
+ */
+export function getAttendeeUserIdsForGroup(groupId, seedUserIds) {
   const gid = String(groupId ?? '').trim()
-  if (!gid) return []
+  const seeds = Array.isArray(seedUserIds) ?
+      seedUserIds.map((x) => String(x).trim()).filter(Boolean)
+    : []
+
+  if (!gid) {
+    return [...new Set(seeds)].sort((a, b) => a.localeCompare(b, 'ko'))
+  }
+
   const map = readJoinedGroupsMap()
-  const out = []
+  const fromJoin = []
   for (const [uid, ids] of Object.entries(map)) {
     const key = String(uid).trim()
     if (!key || !Array.isArray(ids)) continue
-    if (ids.some((x) => String(x) === gid)) out.push(key)
+    if (ids.some((x) => String(x) === gid)) fromJoin.push(key)
   }
-  return out.sort((a, b) => a.localeCompare(b, 'ko'))
+
+  const merged = [...new Set([...seeds, ...fromJoin])]
+  return merged.sort((a, b) => a.localeCompare(b, 'ko'))
 }

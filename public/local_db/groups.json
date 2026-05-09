@@ -7,7 +7,8 @@
       "tag": "반찬",
       "category": "반찬",
       "distanceMeters": 120,
-      "walkMinutes": 2
+      "walkMinutes": 2,
+      "attendeeUserIds": ["sikgu_justin", "coding_slave", "hacker_one"]
     },
     {
       "id": "grp_cook_01",
@@ -16,7 +17,8 @@
       "tag": "요리",
       "category": "요리",
       "distanceMeters": 480,
-      "walkMinutes": 6
+      "walkMinutes": 6,
+      "attendeeUserIds": ["codingcoding", "sikgu_justin"]
     },
     {
       "id": "grp_mart_01",
@@ -25,7 +27,8 @@
       "tag": "공동구매",
       "category": "공동구매",
       "distanceMeters": 3200,
-      "walkMinutes": 40
+      "walkMinutes": 40,
+      "attendeeUserIds": ["codingcoding", "hacker_one", "coding_slave", "sikgu_justin"]
     },
     {
       "id": "grp_delivery_01",
@@ -34,7 +37,8 @@
       "tag": "배달",
       "category": "배달",
       "distanceMeters": 80,
-      "walkMinutes": 1
+      "walkMinutes": 1,
+      "attendeeUserIds": ["hacker_one", "sikgu_justin"]
     },
     {
       "id": "grp_side_02",
@@ -43,7 +47,8 @@
       "tag": "반찬",
       "category": "반찬",
       "distanceMeters": 350,
-      "walkMinutes": 5
+      "walkMinutes": 5,
+      "attendeeUserIds": ["coding_slave"]
     },
     {
       "id": "grp_delivery_02",
@@ -52,7 +57,8 @@
       "tag": "배달",
       "category": "배달",
       "distanceMeters": 50,
-      "walkMinutes": 1
+      "walkMinutes": 1,
+      "attendeeUserIds": ["sikgu_justin", "hacker_one", "codingcoding"]
     },
     {
       "id": "grp_mart_02",
@@ -61,7 +67,8 @@
       "tag": "공동구매",
       "category": "공동구매",
       "distanceMeters": 200,
-      "walkMinutes": 3
+      "walkMinutes": 3,
+      "attendeeUserIds": ["codingcoding", "hacker_one"]
     },
     {
       "id": "grp_cook_02",
@@ -70,7 +77,8 @@
       "tag": "요리",
       "category": "요리",
       "distanceMeters": 890,
-      "walkMinutes": 11
+      "walkMinutes": 11,
+      "attendeeUserIds": ["coding_slave", "codingcoding", "sikgu_justin"]
     },
     {
       "id": "grp_friend_01",
@@ -79,7 +87,8 @@
       "tag": "같이먹기",
       "category": "요리",
       "distanceMeters": 1500,
-      "walkMinutes": 19
+      "walkMinutes": 19,
+      "attendeeUserIds": ["sikgu_justin", "coding_slave", "codingcoding", "hacker_one"]
     },
     {
       "id": "grp_delivery_03",
@@ -88,7 +97,8 @@
       "tag": "배달",
       "category": "배달",
       "distanceMeters": 220,
-      "walkMinutes": 3
+      "walkMinutes": 3,
+      "attendeeUserIds": ["hacker_one", "coding_slave"]
     }
   ]
 }
