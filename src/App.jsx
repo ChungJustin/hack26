@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bell, MapPin, UserCircle2 } from 'lucide-react'
+import { Bell, MapPin, Sparkles, UserCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   loadGroupsPayload,
@@ -10,6 +10,12 @@ import {
   resolveUserFromMerged,
   upsertLocalUser,
 } from './lib/loadLocalDb'
+import {
+  fetchGeminiGroupRecommendations,
+  getEffectiveGeminiApiKey,
+  readStoredGeminiApiKey,
+  writeStoredGeminiApiKey,
+} from './lib/geminiRecommend'
 import { useOnboardingStore } from './store/useOnboardingStore'
 
 const FEED_TABS = ['전체', '반찬', '요리', '공동구매', '배달']
@@ -42,6 +48,11 @@ function App() {
   const [newGroupTitle, setNewGroupTitle] = useState('')
   const [newGroupBody, setNewGroupBody] = useState('')
   const [newGroupCategory, setNewGroupCategory] = useState('반찬')
+  const [geminiKeyInput, setGeminiKeyInput] = useState('')
+  const [aiRecItems, setAiRecItems] = useState([])
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState(null)
+  const [aiTried, setAiTried] = useState(false)
 
   const [draftUserId, setDraftUserId] = useState('')
   const [identifyLoading, setIdentifyLoading] = useState(false)
@@ -99,6 +110,11 @@ function App() {
     }
   }, [appPhase, userId])
 
+  useEffect(() => {
+    if (appPhase !== 'identify' && appPhase !== 'main') return
+    setGeminiKeyInput(readStoredGeminiApiKey())
+  }, [appPhase])
+
   const filteredGroups = useMemo(() => {
     let list = feedGroups
     if (activeFeedTab !== '전체') {
@@ -117,6 +133,54 @@ function App() {
   const historyEntries = userRecord?.history ?? []
   const profile = userRecord?.profile
 
+  const geminiUserSummary = useMemo(
+    () => ({
+      userId: userId.trim(),
+      location: userRecord?.location || location,
+      preferences: userRecord?.preferences || {
+        needs: selectedNeeds,
+        talents: selectedTalents,
+        customNeed,
+      },
+      profile: profile
+        ? {
+            displayName: profile.displayName,
+            level: profile.level,
+          }
+        : null,
+    }),
+    [userId, userRecord, location, selectedNeeds, selectedTalents, customNeed, profile],
+  )
+
+  async function handleGeminiRecommend() {
+    const key = getEffectiveGeminiApiKey(geminiKeyInput)
+    if (!key) {
+      setAiError(
+        'API 키를 입력하고 저장하거나, 프로젝트 루트 .env에 VITE_GEMINI_API_KEY를 넣은 뒤 dev 서버를 다시 켜 주세요.',
+      )
+      setAiRecItems([])
+      return
+    }
+    setAiError(null)
+    setAiLoading(true)
+    setAiRecItems([])
+    try {
+      const items = await fetchGeminiGroupRecommendations({
+        apiKey: key,
+        userSummary: geminiUserSummary,
+        groups: feedGroups,
+      })
+      setAiRecItems(items)
+      setAiTried(true)
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : '추천 요청에 실패했어요.')
+      setAiRecItems([])
+      setAiTried(true)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   async function handleIdentifyContinue() {
     const id = draftUserId.trim()
     if (!id) {
@@ -126,6 +190,9 @@ function App() {
     setIdentifyLoading(true)
     setIdentifyError(null)
     try {
+      if (geminiKeyInput.trim()) {
+        writeStoredGeminiApiKey(geminiKeyInput.trim())
+      }
       const merged = await loadMergedUsersPayload()
       const record = resolveUserFromMerged(merged, id)
       setUserId(id)
@@ -205,6 +272,23 @@ function App() {
               {identifyError ? (
                 <p className="mt-2 text-sm text-red-600">{identifyError}</p>
               ) : null}
+              <div className="mt-5 border-t border-orange-100 pt-5">
+                <label htmlFor="gate-gemini-key" className="block text-sm font-semibold text-orange-950">
+                  Gemini API 키 <span className="font-normal text-orange-900/60">(선택)</span>
+                </label>
+                <input
+                  id="gate-gemini-key"
+                  type="password"
+                  autoComplete="off"
+                  value={geminiKeyInput}
+                  onChange={(e) => setGeminiKeyInput(e.target.value)}
+                  placeholder="나중에 피드에서 넣어도 됩니다"
+                  className="mt-2 w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                />
+                <p className="mt-1 text-xs text-orange-900/55">
+                  입력 후 「계속」하면 이 브라우저에 저장돼요. 비우면 기존에 저장된 키는 그대로 둡니다.
+                </p>
+              </div>
               <button
                 type="button"
                 disabled={identifyLoading}
@@ -551,6 +635,88 @@ function App() {
                         </p>
                       ) : null}
                     </div>
+                  ) : null}
+                </div>
+
+                <div className="rounded-3xl border border-orange-200 bg-gradient-to-b from-orange-50/80 to-white p-5 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="text-primary" size={22} aria-hidden />
+                    <h3 className="text-lg font-extrabold text-orange-950">Gemini 맞춤 추천</h3>
+                  </div>
+                  <p className="mt-1 text-sm text-orange-900/75">
+                    시작 화면에서 넣었으면 그대로 이어져요. 여기서 바꿔도 되고, 저장하면 이 브라우저에만
+                    보관돼요. 원하면{' '}
+                    <code className="rounded bg-orange-100 px-1 text-xs">VITE_GEMINI_API_KEY</code> 환경
+                    변수도 사용할 수 있어요.
+                  </p>
+                  <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end">
+                    <div className="min-w-0 flex-1">
+                      <label htmlFor="gemini-key" className="text-xs font-semibold text-orange-900/80">
+                        Gemini API 키
+                      </label>
+                      <input
+                        id="gemini-key"
+                        type="password"
+                        autoComplete="off"
+                        value={geminiKeyInput}
+                        onChange={(e) => setGeminiKeyInput(e.target.value)}
+                        placeholder="여기에 붙여 넣기 (연결 전이면 비워 둬도 됨)"
+                        className="mt-1 w-full rounded-2xl border border-orange-200 bg-white px-4 py-2.5 text-sm text-orange-950 outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          writeStoredGeminiApiKey(geminiKeyInput.trim())
+                          setAiError(null)
+                        }}
+                        className="rounded-full border border-orange-200 bg-white px-4 py-2.5 text-sm font-bold text-orange-950"
+                      >
+                        키 저장
+                      </button>
+                      <button
+                        type="button"
+                        disabled={aiLoading || feedGroups.length === 0}
+                        onClick={handleGeminiRecommend}
+                        className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                      >
+                        {aiLoading ? '추천 중…' : 'AI 추천 받기'}
+                      </button>
+                    </div>
+                  </div>
+                  {aiError ? (
+                    <p className="mt-3 text-sm text-red-600">{aiError}</p>
+                  ) : null}
+                  {!aiLoading && !aiTried && aiRecItems.length === 0 ? (
+                    <p className="mt-3 text-sm text-orange-900/60">
+                      키를 연결한 뒤 「AI 추천 받기」를 눌러 보세요.
+                    </p>
+                  ) : null}
+                  {!aiLoading && aiTried && aiRecItems.length === 0 && !aiError ? (
+                    <p className="mt-3 text-sm text-orange-900/60">
+                      이번 요청에서는 표시할 추천이 없었어요. 그룹 목록이 충분한지 확인해 보세요.
+                    </p>
+                  ) : null}
+                  {aiRecItems.length > 0 ? (
+                    <ul className="mt-4 space-y-3">
+                      {aiRecItems.map((item) => {
+                        const g = feedGroups.find((x) => x.id === item.id)
+                        if (!g) return null
+                        return (
+                          <li
+                            key={item.id}
+                            className="rounded-2xl border border-orange-100 bg-white/90 p-4 shadow-sm"
+                          >
+                            <p className="font-bold text-orange-950">{g.title}</p>
+                            <p className="mt-1 text-sm text-orange-900/80">{item.reason}</p>
+                            {formatDistanceLine(g) ? (
+                              <p className="mt-2 text-xs text-orange-900/60">{formatDistanceLine(g)}</p>
+                            ) : null}
+                          </li>
+                        )
+                      })}
+                    </ul>
                   ) : null}
                 </div>
 
