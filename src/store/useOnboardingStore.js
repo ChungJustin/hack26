@@ -22,6 +22,7 @@ export const useOnboardingStore = create((set) => ({
   stepTwoOptions: STEP_TWO_OPTIONS,
   selectedNeeds: [],
   selectedTalents: [],
+  userId: '',
   location: '',
   customNeed: '',
   toggleNeed: (id) =>
@@ -38,6 +39,7 @@ export const useOnboardingStore = create((set) => ({
     })),
   setLocation: (location) => set({ location }),
   setCustomNeed: (customNeed) => set({ customNeed }),
+  setUserId: (userId) => set({ userId }),
   setStep: (step) => set({ step }),
 }))
 

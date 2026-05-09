@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Bell, UserCircle2 } from 'lucide-react'
 import { useState } from 'react'
 import { useOnboardingStore } from './store/useOnboardingStore'
@@ -6,6 +6,7 @@ import { useOnboardingStore } from './store/useOnboardingStore'
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showMainFeed, setShowMainFeed] = useState(false)
+  const [stepDirection, setStepDirection] = useState(1)
   const {
     step,
     setStep,
@@ -13,12 +14,14 @@ function App() {
     stepTwoOptions,
     selectedNeeds,
     selectedTalents,
+    userId,
     location,
     customNeed,
     toggleNeed,
     toggleTalent,
     setLocation,
     setCustomNeed,
+    setUserId,
   } = useOnboardingStore()
 
   return (
@@ -143,76 +146,105 @@ function App() {
                 Step {step}/3
               </span>
             </div>
-            <p className="mb-5 text-orange-900/80">
-              {step === 1
-                ? '지금 어떤 식생활 고민을 해결하고 싶나요?'
-                : step === 2
-                  ? '당신이 식구에게 기여할 수 있는 강점은 무엇인가요?'
-                  : '어디에서 식구를 찾고 싶은지 생활권 위치를 입력해 주세요.'}
-            </p>
-            {step < 3 ? (
-              <div className="grid gap-3">
-                {(step === 1 ? stepOneOptions : stepTwoOptions).map((option) => {
-                  const checked =
-                    step === 1
-                      ? selectedNeeds.includes(option.id)
-                      : selectedTalents.includes(option.id)
-                  return (
-                    <motion.button
-                      key={option.id}
-                      type="button"
-                      whileTap={{ scale: 0.99 }}
-                      onClick={() => (step === 1 ? toggleNeed(option.id) : toggleTalent(option.id))}
-                      className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                        checked
-                          ? 'border-primary bg-orange-100 text-orange-950'
-                          : 'border-orange-100 bg-orange-50/60 text-orange-900/80'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium">{option.label}</span>
-                        <span
-                          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                            checked ? 'bg-primary text-white' : 'bg-white text-orange-300'
+            <AnimatePresence mode="wait" custom={stepDirection}>
+              <motion.div
+                key={step}
+                custom={stepDirection}
+                initial={{ opacity: 0, x: stepDirection > 0 ? 42 : -42 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: stepDirection > 0 ? -42 : 42 }}
+                transition={{ duration: 0.22 }}
+                className="space-y-5"
+              >
+                <p className="text-orange-900/80">
+                  {step === 1
+                    ? '지금 어떤 식생활 고민을 해결하고 싶나요?'
+                    : step === 2
+                      ? '당신이 식구에게 기여할 수 있는 강점은 무엇인가요?'
+                      : '어디에서 식구를 찾고 싶은지 생활권 위치를 입력해 주세요.'}
+                </p>
+
+                {step === 1 && (
+                  <div className="space-y-2">
+                    <label htmlFor="userId" className="block text-sm font-semibold text-orange-950">
+                      사용할 아이디
+                    </label>
+                    <input
+                      id="userId"
+                      type="text"
+                      value={userId}
+                      onChange={(event) => setUserId(event.target.value)}
+                      placeholder="예: sikgu_justin"
+                      className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                    />
+                  </div>
+                )}
+
+                {step < 3 ? (
+                  <div className="grid gap-3">
+                    {(step === 1 ? stepOneOptions : stepTwoOptions).map((option) => {
+                      const checked =
+                        step === 1
+                          ? selectedNeeds.includes(option.id)
+                          : selectedTalents.includes(option.id)
+                      return (
+                        <motion.button
+                          key={option.id}
+                          type="button"
+                          whileTap={{ scale: 0.99 }}
+                          onClick={() => (step === 1 ? toggleNeed(option.id) : toggleTalent(option.id))}
+                          className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                            checked
+                              ? 'border-primary bg-orange-100 text-orange-950'
+                              : 'border-orange-100 bg-orange-50/60 text-orange-900/80'
                           }`}
                         >
-                          {checked ? '✓' : ''}
-                        </span>
-                      </div>
-                    </motion.button>
-                  )
-                })}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="location" className="block text-sm font-semibold text-orange-950">
-                    사는 곳 (단지명 / 오피스텔명 / 건물명)
-                  </label>
-                  <input
-                    id="location"
-                    type="text"
-                    value={location}
-                    onChange={(event) => setLocation(event.target.value)}
-                    placeholder="예: 봉명 아이파크, OO 오피스텔"
-                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="customNeed" className="block text-sm font-semibold text-orange-950">
-                    같이 해결하고 싶은 식생활 고민 (선택)
-                  </label>
-                  <textarea
-                    id="customNeed"
-                    value={customNeed}
-                    onChange={(event) => setCustomNeed(event.target.value)}
-                    rows={4}
-                    placeholder="예: 평일 저녁에 같이 반찬 교환할 식구를 찾고 있어요."
-                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
-                  />
-                </div>
-              </div>
-            )}
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="font-medium">{option.label}</span>
+                            <span
+                              className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                                checked ? 'bg-primary text-white' : 'bg-white text-orange-300'
+                              }`}
+                            >
+                              {checked ? '✓' : ''}
+                            </span>
+                          </div>
+                        </motion.button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="location" className="block text-sm font-semibold text-orange-950">
+                        사는 곳 (단지명 / 오피스텔명 / 건물명)
+                      </label>
+                      <input
+                        id="location"
+                        type="text"
+                        value={location}
+                        onChange={(event) => setLocation(event.target.value)}
+                        placeholder="예: 봉명 아이파크, OO 오피스텔"
+                        className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="customNeed" className="block text-sm font-semibold text-orange-950">
+                        같이 해결하고 싶은 식생활 고민 (선택)
+                      </label>
+                      <textarea
+                        id="customNeed"
+                        value={customNeed}
+                        onChange={(event) => setCustomNeed(event.target.value)}
+                        rows={4}
+                        placeholder="예: 평일 저녁에 같이 반찬 교환할 식구를 찾고 있어요."
+                        className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
@@ -221,6 +253,7 @@ function App() {
                     setShowOnboarding(false)
                     return
                   }
+                  setStepDirection(-1)
                   setStep(step - 1)
                 }}
                 className="rounded-full border border-orange-200 bg-white px-6 py-3 font-bold text-orange-950 transition hover:bg-orange-50"
@@ -231,6 +264,7 @@ function App() {
                 type="button"
                 onClick={() => {
                   if (step < 3) {
+                    setStepDirection(1)
                     setStep(Math.min(step + 1, 3))
                     return
                   }
