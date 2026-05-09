@@ -22,6 +22,8 @@ export const useOnboardingStore = create((set) => ({
   stepTwoOptions: STEP_TWO_OPTIONS,
   selectedNeeds: [],
   selectedTalents: [],
+  location: '',
+  customNeed: '',
   toggleNeed: (id) =>
     set((state) => ({
       selectedNeeds: state.selectedNeeds.includes(id)
@@ -34,6 +36,8 @@ export const useOnboardingStore = create((set) => ({
         ? state.selectedTalents.filter((item) => item !== id)
         : [...state.selectedTalents, id],
     })),
+  setLocation: (location) => set({ location }),
+  setCustomNeed: (customNeed) => set({ customNeed }),
   setStep: (step) => set({ step }),
 }))
 

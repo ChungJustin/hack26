@@ -12,8 +12,12 @@ function App() {
     stepTwoOptions,
     selectedNeeds,
     selectedTalents,
+    location,
+    customNeed,
     toggleNeed,
     toggleTalent,
+    setLocation,
+    setCustomNeed,
   } = useOnboardingStore()
 
   return (
@@ -140,40 +144,73 @@ function App() {
             <p className="mb-5 text-orange-900/80">
               {step === 1
                 ? '지금 어떤 식생활 고민을 해결하고 싶나요?'
-                : '당신이 식구에게 기여할 수 있는 강점은 무엇인가요?'}
+                : step === 2
+                  ? '당신이 식구에게 기여할 수 있는 강점은 무엇인가요?'
+                  : '어디에서 식구를 찾고 싶은지 생활권 위치를 입력해 주세요.'}
             </p>
-            <div className="grid gap-3">
-              {(step === 1 ? stepOneOptions : stepTwoOptions).map((option) => {
-                const checked =
-                  step === 1
-                    ? selectedNeeds.includes(option.id)
-                    : selectedTalents.includes(option.id)
-                return (
-                  <motion.button
-                    key={option.id}
-                    type="button"
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => (step === 1 ? toggleNeed(option.id) : toggleTalent(option.id))}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                      checked
-                        ? 'border-primary bg-orange-100 text-orange-950'
-                        : 'border-orange-100 bg-orange-50/60 text-orange-900/80'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-medium">{option.label}</span>
-                      <span
-                        className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                          checked ? 'bg-primary text-white' : 'bg-white text-orange-300'
-                        }`}
-                      >
-                        {checked ? '✓' : ''}
-                      </span>
-                    </div>
-                  </motion.button>
-                )
-              })}
-            </div>
+            {step < 3 ? (
+              <div className="grid gap-3">
+                {(step === 1 ? stepOneOptions : stepTwoOptions).map((option) => {
+                  const checked =
+                    step === 1
+                      ? selectedNeeds.includes(option.id)
+                      : selectedTalents.includes(option.id)
+                  return (
+                    <motion.button
+                      key={option.id}
+                      type="button"
+                      whileTap={{ scale: 0.99 }}
+                      onClick={() => (step === 1 ? toggleNeed(option.id) : toggleTalent(option.id))}
+                      className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                        checked
+                          ? 'border-primary bg-orange-100 text-orange-950'
+                          : 'border-orange-100 bg-orange-50/60 text-orange-900/80'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium">{option.label}</span>
+                        <span
+                          className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                            checked ? 'bg-primary text-white' : 'bg-white text-orange-300'
+                          }`}
+                        >
+                          {checked ? '✓' : ''}
+                        </span>
+                      </div>
+                    </motion.button>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="location" className="block text-sm font-semibold text-orange-950">
+                    사는 곳 (단지명 / 오피스텔명 / 건물명)
+                  </label>
+                  <input
+                    id="location"
+                    type="text"
+                    value={location}
+                    onChange={(event) => setLocation(event.target.value)}
+                    placeholder="예: 봉명 아이파크, OO 오피스텔"
+                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="customNeed" className="block text-sm font-semibold text-orange-950">
+                    같이 해결하고 싶은 식생활 고민 (선택)
+                  </label>
+                  <textarea
+                    id="customNeed"
+                    value={customNeed}
+                    onChange={(event) => setCustomNeed(event.target.value)}
+                    rows={4}
+                    placeholder="예: 평일 저녁에 같이 반찬 교환할 식구를 찾고 있어요."
+                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                  />
+                </div>
+              </div>
+            )}
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
@@ -193,7 +230,7 @@ function App() {
                 onClick={() => setStep(Math.min(step + 1, 3))}
                 className="rounded-full bg-orange-950 px-6 py-3 font-bold text-white transition hover:bg-primary"
               >
-                {step === 1 ? 'Step 2로 가기' : '다음 단계로'}
+                {step === 1 ? 'Step 2로 가기' : step === 2 ? 'Step 3로 가기' : '시작하기'}
               </button>
             </div>
           </section>

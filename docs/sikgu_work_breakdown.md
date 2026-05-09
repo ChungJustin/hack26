@@ -21,7 +21,7 @@
 ### Person B (Logic/Structure)
 - [ ] shadcn/ui 초기화 및 기본 컴포넌트(Button, Card, Input) 설치
 - [x] Zustand 스토어: `useUserStore` (프로필/온보딩 상태 관리)
-- [ ] 온보딩 Step 3: 위치 인증(단지/건물명) 입력 폼 구현
+- [x] 온보딩 Step 3: 위치 인증(단지/건물명) 입력 폼 구현
 - [ ] 페이지 간 라우팅(React Router) 기초 셋업
 
 ---
