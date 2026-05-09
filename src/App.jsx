@@ -12,6 +12,7 @@ import {
 } from './lib/loadLocalDb'
 import {
   fetchGeminiGroupRecommendations,
+  GeminiRecommendError,
   getEffectiveGeminiApiKey,
   readStoredGeminiApiKey,
   writeStoredGeminiApiKey,
@@ -53,6 +54,7 @@ function App() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState(null)
   const [aiTried, setAiTried] = useState(false)
+  const [geminiDebug, setGeminiDebug] = useState(null)
 
   const [draftUserId, setDraftUserId] = useState('')
   const [identifyLoading, setIdentifyLoading] = useState(false)
@@ -159,22 +161,26 @@ function App() {
         'API 키를 입력하고 저장하거나, 프로젝트 루트 .env에 VITE_GEMINI_API_KEY를 넣은 뒤 dev 서버를 다시 켜 주세요.',
       )
       setAiRecItems([])
+      setGeminiDebug(null)
       return
     }
     setAiError(null)
+    setGeminiDebug(null)
     setAiLoading(true)
     setAiRecItems([])
     try {
-      const items = await fetchGeminiGroupRecommendations({
+      const { items, debug } = await fetchGeminiGroupRecommendations({
         apiKey: key,
         userSummary: geminiUserSummary,
         groups: feedGroups,
       })
       setAiRecItems(items)
+      setGeminiDebug(debug)
       setAiTried(true)
     } catch (err) {
       setAiError(err instanceof Error ? err.message : '추천 요청에 실패했어요.')
       setAiRecItems([])
+      setGeminiDebug(err instanceof GeminiRecommendError ? err.debug : null)
       setAiTried(true)
     } finally {
       setAiLoading(false)
@@ -670,6 +676,7 @@ function App() {
                         onClick={() => {
                           writeStoredGeminiApiKey(geminiKeyInput.trim())
                           setAiError(null)
+                          setGeminiDebug(null)
                         }}
                         className="rounded-full border border-orange-200 bg-white px-4 py-2.5 text-sm font-bold text-orange-950"
                       >
@@ -687,6 +694,16 @@ function App() {
                   </div>
                   {aiError ? (
                     <p className="mt-3 text-sm text-red-600">{aiError}</p>
+                  ) : null}
+                  {geminiDebug ? (
+                    <details className="mt-3 rounded-2xl border border-orange-200 bg-orange-950/[0.03] p-3">
+                      <summary className="cursor-pointer text-xs font-bold text-orange-900/90">
+                        Gemini 원시 응답 (디버그) — API JSON 전체
+                      </summary>
+                      <pre className="mt-2 max-h-[min(70vh,28rem)] overflow-auto whitespace-pre-wrap break-words rounded-xl bg-orange-950/90 p-3 font-mono text-[11px] leading-relaxed text-orange-50">
+                        {JSON.stringify(geminiDebug, null, 2)}
+                      </pre>
+                    </details>
                   ) : null}
                   {!aiLoading && !aiTried && aiRecItems.length === 0 ? (
                     <p className="mt-3 text-sm text-orange-900/60">
