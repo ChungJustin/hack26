@@ -16,7 +16,7 @@
 - [x] Vite 프로젝트 생성 및 Tailwind CSS 셋업
 - [x] 글로벌 테마 설정 (Color Palette, Typography)
 - [x] 온보딩 Step 1: 니즈 파악 체크리스트 UI
-- [ ] 온보딩 Step 2: 나의 역량(Talent) 선택 UI
+- [x] 온보딩 Step 2: 나의 역량(Talent) 선택 UI
 
 ### Person B (Logic/Structure)
 - [ ] shadcn/ui 초기화 및 기본 컴포넌트(Button, Card, Input) 설치

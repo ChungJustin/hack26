@@ -5,7 +5,16 @@ import { useOnboardingStore } from './store/useOnboardingStore'
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const { stepOneOptions, selectedNeeds, toggleNeed } = useOnboardingStore()
+  const {
+    step,
+    setStep,
+    stepOneOptions,
+    stepTwoOptions,
+    selectedNeeds,
+    selectedTalents,
+    toggleNeed,
+    toggleTalent,
+  } = useOnboardingStore()
 
   return (
     <div className="min-h-screen bg-background-warm text-text-main">
@@ -51,7 +60,10 @@ function App() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setShowOnboarding(true)}
+                  onClick={() => {
+                    setStep(1)
+                    setShowOnboarding(true)
+                  }}
                   className="rounded-full bg-primary px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:-translate-y-0.5"
                 >
                   식구 시작하기 🐣
@@ -120,21 +132,28 @@ function App() {
         ) : (
           <section className="mx-auto max-w-3xl rounded-3xl border border-orange-200 bg-white p-6 shadow-sm md:mt-12 md:p-8">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-extrabold text-orange-950">온보딩 Step 1</h2>
+              <h2 className="text-2xl font-extrabold text-orange-950">온보딩 Step {step}</h2>
               <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-semibold text-primary">
-                Step {1}/3
+                Step {step}/3
               </span>
             </div>
-            <p className="mb-5 text-orange-900/80">지금 어떤 식생활 고민을 해결하고 싶나요?</p>
+            <p className="mb-5 text-orange-900/80">
+              {step === 1
+                ? '지금 어떤 식생활 고민을 해결하고 싶나요?'
+                : '당신이 식구에게 기여할 수 있는 강점은 무엇인가요?'}
+            </p>
             <div className="grid gap-3">
-              {stepOneOptions.map((option) => {
-                const checked = selectedNeeds.includes(option.id)
+              {(step === 1 ? stepOneOptions : stepTwoOptions).map((option) => {
+                const checked =
+                  step === 1
+                    ? selectedNeeds.includes(option.id)
+                    : selectedTalents.includes(option.id)
                 return (
                   <motion.button
                     key={option.id}
                     type="button"
                     whileTap={{ scale: 0.99 }}
-                    onClick={() => toggleNeed(option.id)}
+                    onClick={() => (step === 1 ? toggleNeed(option.id) : toggleTalent(option.id))}
                     className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
                       checked
                         ? 'border-primary bg-orange-100 text-orange-950'
@@ -158,16 +177,23 @@ function App() {
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
-                onClick={() => setShowOnboarding(false)}
+                onClick={() => {
+                  if (step === 1) {
+                    setShowOnboarding(false)
+                    return
+                  }
+                  setStep(step - 1)
+                }}
                 className="rounded-full border border-orange-200 bg-white px-6 py-3 font-bold text-orange-950 transition hover:bg-orange-50"
               >
                 뒤로가기
               </button>
               <button
                 type="button"
+                onClick={() => setStep(Math.min(step + 1, 3))}
                 className="rounded-full bg-orange-950 px-6 py-3 font-bold text-white transition hover:bg-primary"
               >
-                다음 단계로
+                {step === 1 ? 'Step 2로 가기' : '다음 단계로'}
               </button>
             </div>
           </section>
