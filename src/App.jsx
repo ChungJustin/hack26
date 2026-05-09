@@ -37,12 +37,6 @@ function formatDistanceLine(group) {
   return parts.join(' · ')
 }
 
-function isCurrentUserAttendingGroup(group, currentUserId) {
-  const uid = String(currentUserId ?? '').trim()
-  if (!uid || !group?.id) return false
-  return getAttendeeUserIdsForGroup(group.id, group.attendeeUserIds).includes(uid)
-}
-
 function GroupAttendeeList({ groupId, seedAttendeeUserIds, currentUserId, attendingHighlight }) {
   const ids = getAttendeeUserIdsForGroup(groupId, seedAttendeeUserIds)
   if (ids.length === 0) return null
@@ -57,7 +51,7 @@ function GroupAttendeeList({ groupId, seedAttendeeUserIds, currentUserId, attend
       {attendingHighlight ? (
         <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-primary">
           <UserCheck size={15} aria-hidden />
-          내가 참석 중인 모임이에요
+          내가 참여한 모임이에요
         </p>
       ) : null}
       <p className="font-semibold text-orange-950">
@@ -827,22 +821,22 @@ function App() {
                       {aiRecItems.map((item) => {
                         const g = feedGroups.find((x) => x.id === item.id)
                         if (!g) return null
-                        const imAttending = isCurrentUserAttendingGroup(g, userId)
+                        const imJoined = joinedGroupIds.includes(g.id)
                         return (
                           <li
                             key={item.id}
                             className={`rounded-2xl p-4 shadow-sm ${
-                              imAttending ?
+                              imJoined ?
                                 'border-2 border-primary/45 bg-gradient-to-b from-orange-50/95 to-white ring-1 ring-primary/15'
                               : 'border border-orange-100 bg-white/90'
                             }`}
                           >
                             <div className="flex flex-wrap items-start justify-between gap-2">
                               <p className="font-bold text-orange-950">{g.title}</p>
-                              {imAttending ? (
+                              {imJoined ? (
                                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
                                   <UserCheck size={14} aria-hidden />
-                                  참석 중
+                                  참여함
                                 </span>
                               ) : null}
                             </div>
@@ -854,25 +848,19 @@ function App() {
                               groupId={g.id}
                               seedAttendeeUserIds={g.attendeeUserIds}
                               currentUserId={userId}
-                              attendingHighlight={imAttending}
+                              attendingHighlight={imJoined}
                             />
                             <div className="mt-3 flex flex-wrap gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleToggleJoinGroup(g.id)}
                                 className={`rounded-full px-4 py-2 text-sm font-bold transition ${
-                                  joinedGroupIds.includes(g.id)
-                                    ? 'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
-                                    : imAttending ?
-                                      'border-2 border-primary/40 bg-white text-primary hover:bg-orange-50'
-                                    : 'bg-orange-950 text-white hover:bg-primary'
+                                  imJoined ?
+                                    'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
+                                  : 'bg-orange-950 text-white hover:bg-primary'
                                 }`}
                               >
-                                {joinedGroupIds.includes(g.id) ?
-                                  '참석 중 · 취소'
-                                : imAttending ?
-                                  '앱에도 참여 등록하기'
-                                : '참여하기'}
+                                {imJoined ? '참여 취소' : '참여하기'}
                               </button>
                               <button
                                 type="button"
@@ -930,12 +918,12 @@ function App() {
                       </p>
                     ) : (
                       filteredGroups.map((group) => {
-                        const imAttending = isCurrentUserAttendingGroup(group, userId)
+                        const imJoined = joinedGroupIds.includes(group.id)
                         return (
                           <article
                             key={group.id}
                             className={`rounded-3xl p-5 shadow-sm ${
-                              imAttending ?
+                              imJoined ?
                                 'border-2 border-primary/45 bg-gradient-to-b from-orange-50/95 to-white ring-1 ring-primary/15'
                               : 'border border-orange-100 bg-white'
                             }`}
@@ -943,10 +931,10 @@ function App() {
                             <div className="mb-2 flex items-start justify-between gap-2">
                               <h3 className="min-w-0 flex-1 text-lg font-bold text-orange-950">{group.title}</h3>
                               <div className="flex shrink-0 flex-col items-end gap-1.5">
-                                {imAttending ? (
+                                {imJoined ? (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
                                     <UserCheck size={14} aria-hidden />
-                                    참석 중
+                                    참여함
                                   </span>
                                 ) : null}
                                 <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
@@ -965,24 +953,18 @@ function App() {
                               groupId={group.id}
                               seedAttendeeUserIds={group.attendeeUserIds}
                               currentUserId={userId}
-                              attendingHighlight={imAttending}
+                              attendingHighlight={imJoined}
                             />
                             <button
                               type="button"
                               onClick={() => handleToggleJoinGroup(group.id)}
                               className={`mt-3 rounded-full px-5 py-2 text-sm font-bold transition ${
-                                joinedGroupIds.includes(group.id)
-                                  ? 'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
-                                  : imAttending ?
-                                    'border-2 border-primary/40 bg-white text-primary hover:bg-orange-50'
-                                  : 'bg-orange-950 text-white hover:bg-primary'
+                                imJoined ?
+                                  'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
+                                : 'bg-orange-950 text-white hover:bg-primary'
                               }`}
                             >
-                              {joinedGroupIds.includes(group.id) ?
-                                '참석 중 · 취소하려면 누르기'
-                              : imAttending ?
-                                '앱에도 참여 등록하기'
-                              : '참여하기'}
+                              {imJoined ? '참여 취소' : '참여하기'}
                             </button>
                           </article>
                         )
@@ -1015,24 +997,17 @@ function App() {
                   </p>
                 ) : (
                   <div className="grid gap-4">
-                    {joinedGroupsOrdered.map((group) => {
-                      const imAttending = isCurrentUserAttendingGroup(group, userId)
-                      return (
-                        <article
+                    {joinedGroupsOrdered.map((group) => (
+                      <article
                         key={group.id}
                         className="rounded-3xl border-2 border-primary/35 bg-gradient-to-b from-orange-50/90 to-white p-5 shadow-md ring-1 ring-primary/10"
                       >
                         <div className="mb-2 flex items-start justify-between gap-2">
                           <h3 className="min-w-0 flex-1 text-lg font-bold text-orange-950">{group.title}</h3>
-                          <div className="flex shrink-0 flex-col items-end gap-1.5">
-                            <span className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
-                              <UserCheck size={14} aria-hidden />
-                              참석 중
-                            </span>
-                            <span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
-                              참석 예정
-                            </span>
-                          </div>
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-white">
+                            <UserCheck size={14} aria-hidden />
+                            참여함
+                          </span>
                         </div>
                         {formatDistanceLine(group) ? (
                           <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-orange-900/80">
@@ -1045,7 +1020,7 @@ function App() {
                           groupId={group.id}
                           seedAttendeeUserIds={group.attendeeUserIds}
                           currentUserId={userId}
-                          attendingHighlight={imAttending}
+                          attendingHighlight
                         />
                         <button
                           type="button"
@@ -1055,8 +1030,7 @@ function App() {
                           참여 취소
                         </button>
                       </article>
-                      )
-                    })}
+                    ))}
                   </div>
                 )}
               </>
