@@ -69,3 +69,33 @@ export function resolveUserFromMerged(mergedPayload, rawUserId) {
   if (!users || typeof users !== 'object') return null
   return users[key] ?? null
 }
+
+const LOCAL_FEED_GROUPS_KEY = 'sikgu_local_feed_groups_v1'
+
+export function readLocalFeedGroups() {
+  try {
+    const raw = localStorage.getItem(LOCAL_FEED_GROUPS_KEY)
+    if (!raw) return []
+    const data = JSON.parse(raw)
+    return Array.isArray(data) ? data : []
+  } catch {
+    return []
+  }
+}
+
+export function writeLocalFeedGroups(groups) {
+  localStorage.setItem(LOCAL_FEED_GROUPS_KEY, JSON.stringify(groups))
+}
+
+export function prependLocalFeedGroup(group) {
+  const list = readLocalFeedGroups()
+  writeLocalFeedGroups([group, ...list])
+}
+
+export function mergeServerAndLocalFeedGroups(serverList, localList) {
+  const server = Array.isArray(serverList) ? serverList : []
+  const local = Array.isArray(localList) ? localList : []
+  const seen = new Set(local.map((g) => g.id).filter(Boolean))
+  const rest = server.filter((g) => g?.id && !seen.has(g.id))
+  return [...local, ...rest]
+}

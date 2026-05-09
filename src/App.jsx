@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   loadGroupsPayload,
   loadMergedUsersPayload,
+  mergeServerAndLocalFeedGroups,
+  prependLocalFeedGroup,
+  readLocalFeedGroups,
   resolveUserFromMerged,
   upsertLocalUser,
 } from './lib/loadLocalDb'
@@ -77,7 +80,9 @@ function App() {
           loadMergedUsersPayload(),
         ])
         if (cancelled) return
-        setFeedGroups(Array.isArray(groupsPayload?.groups) ? groupsPayload.groups : [])
+        const serverGroups = Array.isArray(groupsPayload?.groups) ? groupsPayload.groups : []
+        const localGroups = readLocalFeedGroups()
+        setFeedGroups(mergeServerAndLocalFeedGroups(serverGroups, localGroups))
         setUserRecord(resolveUserFromMerged(mergedUsers, userId))
       } catch (err) {
         if (!cancelled) {
@@ -349,102 +354,130 @@ function App() {
 
         {appPhase === 'main' ? (
           <section className="mx-auto max-w-4xl space-y-6 py-8">
-            <div className="rounded-3xl border border-orange-100 bg-white p-4 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <input
-                  type="search"
-                  value={feedSearchInput}
-                  onChange={(e) => setFeedSearchInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setFeedSearchApplied(feedSearchInput.trim())
-                    }
-                  }}
-                  placeholder="키워드로 식구 그룹 검색…"
-                  className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
-                  aria-label="식구 그룹 검색"
-                />
-                <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setFeedSearchApplied(feedSearchInput.trim())}
-                    className="rounded-full bg-orange-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary"
-                  >
-                    검색
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCreateGroupOpen((o) => !o)}
-                    className="rounded-full border-2 border-primary bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-orange-50"
-                  >
-                    식구그룹 만들기
-                  </button>
-                </div>
-              </div>
-              {createGroupOpen ? (
-                <div className="mt-4 space-y-3 border-t border-orange-100 pt-4">
-                  <p className="text-sm font-semibold text-orange-950">새 그룹 등록 (로컬에만 추가)</p>
+            {mainView === 'feed' ? (
+              <div className="rounded-3xl border border-orange-100 bg-white p-4 shadow-sm">
+                <p className="mb-3 text-xs text-orange-900/60">
+                  검색은 아래 목록만 걸러요. 새 글은 이 기기 브라우저에만 저장돼요(새로고침 후에도 유지).
+                </p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                   <input
-                    type="text"
-                    value={newGroupTitle}
-                    onChange={(e) => setNewGroupTitle(e.target.value)}
-                    placeholder="제목"
-                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-2.5 text-orange-950 outline-none focus:border-primary focus:bg-white"
+                    type="search"
+                    value={feedSearchInput}
+                    onChange={(e) => setFeedSearchInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setFeedSearchApplied(feedSearchInput.trim())
+                      }
+                    }}
+                    placeholder="키워드로 식구 그룹 검색…"
+                    className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                    aria-label="식구 그룹 검색"
                   />
-                  <textarea
-                    value={newGroupBody}
-                    onChange={(e) => setNewGroupBody(e.target.value)}
-                    rows={3}
-                    placeholder="설명"
-                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-2.5 text-orange-950 outline-none focus:border-primary focus:bg-white"
-                  />
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm text-orange-900/80">
-                      카테고리
-                      <select
-                        value={newGroupCategory}
-                        onChange={(e) => setNewGroupCategory(e.target.value)}
-                        className="rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm font-medium text-orange-950"
-                      >
-                        {FEED_TABS.filter((t) => t !== '전체').map((t) => (
-                          <option key={t} value={t}>
-                            {t}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                  <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
                     <button
                       type="button"
-                      onClick={() => {
-                        const title = newGroupTitle.trim()
-                        const body = newGroupBody.trim()
-                        if (!title || !body) return
-                        const tag = newGroupCategory
-                        setFeedGroups((prev) => [
-                          {
-                            id: `grp_local_${Date.now()}`,
-                            title,
-                            body,
-                            tag,
-                            category: newGroupCategory,
-                            distanceMeters: 400,
-                            walkMinutes: 5,
-                          },
-                          ...prev,
-                        ])
-                        setNewGroupTitle('')
-                        setNewGroupBody('')
-                        setCreateGroupOpen(false)
-                        setMainView('feed')
-                      }}
-                      className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-white"
+                      onClick={() => setFeedSearchApplied(feedSearchInput.trim())}
+                      className="rounded-full bg-orange-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary"
                     >
-                      등록하기
+                      검색
+                    </button>
+                    {feedSearchApplied ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFeedSearchApplied('')
+                          setFeedSearchInput('')
+                        }}
+                        className="rounded-full border border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-orange-900/80"
+                      >
+                        초기화
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setCreateGroupOpen((o) => !o)}
+                      className="rounded-full border-2 border-primary bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-orange-50"
+                    >
+                      {createGroupOpen ? '닫기' : '식구그룹 만들기'}
                     </button>
                   </div>
                 </div>
-              ) : null}
-            </div>
+                {createGroupOpen ? (
+                  <div className="mt-4 space-y-3 border-t border-orange-100 pt-4">
+                    <p className="text-sm font-semibold text-orange-950">새 식구 그룹</p>
+                    <input
+                      type="text"
+                      value={newGroupTitle}
+                      onChange={(e) => setNewGroupTitle(e.target.value)}
+                      placeholder="제목 (예: 오늘 저녁 피자 나눠요)"
+                      className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-2.5 text-orange-950 outline-none focus:border-primary focus:bg-white"
+                    />
+                    <textarea
+                      value={newGroupBody}
+                      onChange={(e) => setNewGroupBody(e.target.value)}
+                      rows={3}
+                      placeholder="설명 (모집 인원, 시간, 나누는 방식 등)"
+                      className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-2.5 text-orange-950 outline-none focus:border-primary focus:bg-white"
+                    />
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm text-orange-900/80">
+                        카테고리
+                        <select
+                          value={newGroupCategory}
+                          onChange={(e) => setNewGroupCategory(e.target.value)}
+                          className="rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm font-medium text-orange-950"
+                        >
+                          {FEED_TABS.filter((t) => t !== '전체').map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const title = newGroupTitle.trim()
+                          const body = newGroupBody.trim()
+                          if (!title || !body) return
+                          const newGroup = {
+                            id: `grp_local_${Date.now()}`,
+                            title,
+                            body,
+                            tag: newGroupCategory,
+                            category: newGroupCategory,
+                            distanceMeters: 400,
+                            walkMinutes: 5,
+                          }
+                          prependLocalFeedGroup(newGroup)
+                          setFeedGroups((prev) => {
+                            const rest = prev.filter((g) => g.id !== newGroup.id)
+                            return [newGroup, ...rest]
+                          })
+                          setNewGroupTitle('')
+                          setNewGroupBody('')
+                          setCreateGroupOpen(false)
+                        }}
+                        className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-white"
+                      >
+                        등록하기
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCreateGroupOpen(false)
+                          setNewGroupTitle('')
+                          setNewGroupBody('')
+                        }}
+                        className="rounded-full border border-orange-200 bg-white px-5 py-2 text-sm font-semibold text-orange-900/80"
+                      >
+                        취소
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -550,7 +583,9 @@ function App() {
                   <div className="grid gap-4">
                     {filteredGroups.length === 0 ? (
                       <p className="rounded-2xl border border-orange-100 bg-white px-4 py-8 text-center text-orange-900/70">
-                        이 카테고리에 표시할 그룹이 없어요.
+                        {feedSearchApplied.trim()
+                          ? `「${feedSearchApplied.trim()}」에 맞는 그룹이 없어요. 검색어를 바꿔 보세요.`
+                          : '이 카테고리에 표시할 그룹이 없어요.'}
                       </p>
                     ) : (
                       filteredGroups.map((group) => (
