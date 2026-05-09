@@ -230,7 +230,7 @@ function App() {
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="customNeed" className="block text-sm font-semibold text-orange-950">
-                        같이 해결하고 싶은 식생활 고민 (선택)
+                        추가적으로 같이 해결하고 싶은 식생활 문제는?
                       </label>
                       <textarea
                         id="customNeed"
