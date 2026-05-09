@@ -41,6 +41,28 @@ export const useOnboardingStore = create((set) => ({
   setCustomNeed: (customNeed) => set({ customNeed }),
   setUserId: (userId) => set({ userId }),
   setStep: (step) => set({ step }),
+  hydrateFromUserRecord: (userId, record) =>
+    set({
+      userId: String(userId ?? '').trim(),
+      location: record?.location ?? '',
+      customNeed: record?.preferences?.customNeed ?? '',
+      selectedNeeds: Array.isArray(record?.preferences?.needs)
+        ? [...record.preferences.needs]
+        : [],
+      selectedTalents: Array.isArray(record?.preferences?.talents)
+        ? [...record.preferences.talents]
+        : [],
+      step: 1,
+    }),
+  resetForNewUser: (userId) =>
+    set({
+      userId: String(userId ?? '').trim(),
+      location: '',
+      customNeed: '',
+      selectedNeeds: [],
+      selectedTalents: [],
+      step: 1,
+    }),
 }))
 
 export const useUserStore = useOnboardingStore

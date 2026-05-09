@@ -10,6 +10,12 @@
           "activeSikgus": 3
         }
       },
+      "location": "봉명 아이파크",
+      "preferences": {
+        "needs": ["delivery", "side-dish", "friend"],
+        "talents": ["korean-side", "shopping"],
+        "customNeed": "평일 저녁 반찬 교환하고 싶어요."
+      },
       "history": [
         {
           "id": "h1",
@@ -44,6 +50,12 @@
           "activeSikgus": 1
         }
       },
+      "location": "강남구 역삼동 오피스텔",
+      "preferences": {
+        "needs": ["delivery", "ingredient"],
+        "talents": ["pasta"],
+        "customNeed": ""
+      },
       "history": [
         {
           "id": "h1",
@@ -51,6 +63,79 @@
           "detail": "배달 쉐어 1회",
           "timeLabel": "3d ago",
           "emoji": "🍕"
+        }
+      ]
+    },
+    "codingcoding": {
+      "profile": {
+        "displayName": "코딩코딩",
+        "level": "Sikgu Regular",
+        "badgeEmoji": "🐥",
+        "stats": {
+          "mealsShared": 8,
+          "activeSikgus": 2
+        }
+      },
+      "location": "대전 유성구 봉명동 OO오피스텔",
+      "preferences": {
+        "needs": ["delivery", "ingredient", "variety"],
+        "talents": ["shopping", "oven"],
+        "customNeed": "주말에 코스트코 같이 갈 분 찾아요. 냉동실이 작아서 소분 필수예요."
+      },
+      "history": [
+        {
+          "id": "h1",
+          "name": "식구 매니아",
+          "detail": "장보기 쉐어 3회",
+          "timeLabel": "5d ago",
+          "emoji": "🛒"
+        },
+        {
+          "id": "h2",
+          "name": "야근러 A",
+          "detail": "치킨 배달 쉐어 2회",
+          "timeLabel": "2w ago",
+          "emoji": "🍗"
+        }
+      ]
+    },
+    "coding_slave": {
+      "profile": {
+        "displayName": "코딩의 노예",
+        "level": "Side Dish Hero",
+        "badgeEmoji": "🍱",
+        "stats": {
+          "mealsShared": 12,
+          "activeSikgus": 4
+        }
+      },
+      "location": "서울 마포구 합정동 원룸촌",
+      "preferences": {
+        "needs": ["side-dish", "friend", "variety"],
+        "talents": ["korean-side", "challenge", "pasta"],
+        "customNeed": "주 1회 반찬 교환하고 싶어요. 매운 거 잘 못 먹어요."
+      },
+      "history": [
+        {
+          "id": "h1",
+          "name": "Happy Diner",
+          "detail": "반찬 나눔 4회",
+          "timeLabel": "1d ago",
+          "emoji": "🍚"
+        },
+        {
+          "id": "h2",
+          "name": "Linuxias",
+          "detail": "토요일 파스타 모임 1회",
+          "timeLabel": "2w ago",
+          "emoji": "🍝"
+        },
+        {
+          "id": "h3",
+          "name": "새싹 식구",
+          "detail": "첫 만남 예정",
+          "timeLabel": "Soon",
+          "emoji": "🌱"
         }
       ]
     }

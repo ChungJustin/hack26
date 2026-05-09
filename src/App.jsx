@@ -3,16 +3,16 @@ import { Bell, UserCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   loadGroupsPayload,
-  loadUsersPayload,
-  resolveUserRecord,
+  loadMergedUsersPayload,
+  resolveUserFromMerged,
+  upsertLocalUser,
 } from './lib/loadLocalDb'
 import { useOnboardingStore } from './store/useOnboardingStore'
 
 const FEED_TABS = ['전체', '반찬', '요리', '공동구매', '배달']
 
 function App() {
-  const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showMainFeed, setShowMainFeed] = useState(false)
+  const [appPhase, setAppPhase] = useState('identify')
   const [mainView, setMainView] = useState('feed')
   const [stepDirection, setStepDirection] = useState(1)
   const [feedGroups, setFeedGroups] = useState([])
@@ -20,6 +20,11 @@ function App() {
   const [dbLoading, setDbLoading] = useState(false)
   const [dbError, setDbError] = useState(null)
   const [activeFeedTab, setActiveFeedTab] = useState('전체')
+
+  const [draftUserId, setDraftUserId] = useState('')
+  const [identifyLoading, setIdentifyLoading] = useState(false)
+  const [identifyError, setIdentifyError] = useState(null)
+
   const {
     step,
     setStep,
@@ -35,10 +40,12 @@ function App() {
     setLocation,
     setCustomNeed,
     setUserId,
+    hydrateFromUserRecord,
+    resetForNewUser,
   } = useOnboardingStore()
 
   useEffect(() => {
-    if (!showMainFeed) return undefined
+    if (appPhase !== 'main') return undefined
 
     let cancelled = false
 
@@ -46,13 +53,13 @@ function App() {
       setDbLoading(true)
       setDbError(null)
       try {
-        const [groupsPayload, usersPayload] = await Promise.all([
+        const [groupsPayload, mergedUsers] = await Promise.all([
           loadGroupsPayload(),
-          loadUsersPayload(),
+          loadMergedUsersPayload(),
         ])
         if (cancelled) return
         setFeedGroups(Array.isArray(groupsPayload?.groups) ? groupsPayload.groups : [])
-        setUserRecord(resolveUserRecord(usersPayload, userId))
+        setUserRecord(resolveUserFromMerged(mergedUsers, userId))
       } catch (err) {
         if (!cancelled) {
           setDbError(err instanceof Error ? err.message : '데이터를 불러오지 못했어요.')
@@ -66,7 +73,7 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [showMainFeed, userId])
+  }, [appPhase, userId])
 
   const filteredGroups = useMemo(() => {
     if (activeFeedTab === '전체') return feedGroups
@@ -75,6 +82,56 @@ function App() {
 
   const historyEntries = userRecord?.history ?? []
   const profile = userRecord?.profile
+
+  async function handleIdentifyContinue() {
+    const id = draftUserId.trim()
+    if (!id) {
+      setIdentifyError('아이디를 입력해 주세요.')
+      return
+    }
+    setIdentifyLoading(true)
+    setIdentifyError(null)
+    try {
+      const merged = await loadMergedUsersPayload()
+      const record = resolveUserFromMerged(merged, id)
+      setUserId(id)
+      if (record) {
+        hydrateFromUserRecord(id, record)
+        setAppPhase('main')
+        setMainView('feed')
+      } else {
+        resetForNewUser(id)
+        setAppPhase('onboarding')
+      }
+    } catch (err) {
+      setIdentifyError(err instanceof Error ? err.message : '사용자 정보를 확인하지 못했어요.')
+    } finally {
+      setIdentifyLoading(false)
+    }
+  }
+
+  function handleOnboardingFinish() {
+    const id = userId.trim()
+    if (!id) return
+    const newRecord = {
+      profile: {
+        displayName: id,
+        level: 'Sikgu Starter',
+        badgeEmoji: '🐣',
+        stats: { mealsShared: 0, activeSikgus: 0 },
+      },
+      location,
+      preferences: {
+        needs: [...selectedNeeds],
+        talents: [...selectedTalents],
+        customNeed,
+      },
+      history: [],
+    }
+    upsertLocalUser(id, newRecord)
+    setAppPhase('main')
+    setMainView('feed')
+  }
 
   return (
     <div className="min-h-screen bg-background-warm text-text-main">
@@ -89,99 +146,57 @@ function App() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-5 pb-20">
-        {!showOnboarding && !showMainFeed ? (
-          <>
-            <section className="grid items-center gap-10 py-12 md:grid-cols-2 md:py-16">
-              <div className="space-y-5 text-center md:text-left">
-                <span className="inline-block rounded-full bg-secondary px-4 py-2 text-sm font-semibold text-primary">
-                  저희는 식구를 만들어 줍니다 ✨
-                </span>
-                <h1 className="text-4xl font-extrabold leading-tight text-orange-950 md:text-5xl">
-                  혼자 먹는 밥에서,
-                  <br />
-                  함께하는 <span className="text-primary">식구</span>로
-                </h1>
-                <p className="text-base text-orange-950/75 md:text-lg">
-                  1인 가구의 따뜻한 연결, 식구가 시작합니다.
-                  <br />
-                  더 이상 외로운 식사는 그만! 함께 나누는 즐거움을 느껴보세요.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep(1)
-                    setShowMainFeed(false)
-                    setShowOnboarding(true)
-                  }}
-                  className="rounded-full bg-primary px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:-translate-y-0.5"
-                >
-                  식구 시작하기 🐣
-                </button>
-              </div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-4 rounded-3xl border border-orange-100 bg-white p-6 shadow-sm"
+        {appPhase === 'identify' ? (
+          <section className="mx-auto max-w-md space-y-6 py-16">
+            <div className="text-center">
+              <p className="text-sm font-semibold text-primary">저희는 식구를 만들어 줍니다 ✨</p>
+              <h1 className="mt-3 text-3xl font-extrabold text-orange-950">아이디로 시작하기</h1>
+              <p className="mt-2 text-orange-900/75">
+                등록된 아이디면 바로 불러오고, 없으면 새 식구 프로필을 만들게요.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-orange-200 bg-white p-6 shadow-sm">
+              <label htmlFor="gate-userId" className="block text-sm font-semibold text-orange-950">
+                아이디
+              </label>
+              <input
+                id="gate-userId"
+                type="text"
+                value={draftUserId}
+                onChange={(e) => setDraftUserId(e.target.value)}
+                placeholder="예: sikgu_justin"
+                className="mt-2 w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                autoComplete="username"
+              />
+              {identifyError ? (
+                <p className="mt-2 text-sm text-red-600">{identifyError}</p>
+              ) : null}
+              <button
+                type="button"
+                disabled={identifyLoading}
+                onClick={handleIdentifyContinue}
+                className="mt-4 w-full rounded-full bg-primary py-4 text-lg font-bold text-white shadow-lg transition hover:opacity-95 disabled:opacity-60"
               >
-                <div className="overflow-hidden rounded-2xl">
-                  <img
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmvn7JKDeObkDyfgjLIC2wsSnSCBD_FFp_0xn_iCR1teXXvtBjnhkcpHwnYnjMXs4WBHA899gQWYGvbYRYS7pxAdWP8QJFGekw7AD6TV34WT3ae-mzMZR8uyHftsEz2D31dXQnBCWS6t-E8bFzTt8enEzxouWOW1L5DklG0kmApvbLUSUjWOdEJN0XpJU5i2HW2FI-oNbPKRubWfwmrbBfplTel9YTvXXLJSzsoWFydEWGx9CSU90c1QHxM3RkB1CCHREDJO5cmCg"
-                    alt="따뜻한 분위기의 식사 모임"
-                    className="h-64 w-full object-cover md:h-80"
-                  />
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl bg-orange-50 px-4 py-3">
-                  <span className="text-2xl">🍱</span>
-                  <div>
-                    <p className="text-sm font-semibold text-orange-950">오늘의 식구</p>
-                    <p className="text-sm text-orange-900/70">강남구 반찬나눔이 진행 중이에요</p>
-                  </div>
-                </div>
-              </motion.div>
-            </section>
+                {identifyLoading ? '확인 중…' : '계속'}
+              </button>
+              <p className="mt-3 text-center text-xs text-orange-900/60">
+                시드: <span className="font-medium">sikgu_justin</span>,{' '}
+                <span className="font-medium">hacker_one</span>,{' '}
+                <span className="font-medium">codingcoding</span>,{' '}
+                <span className="font-medium">coding_slave</span>
+              </p>
+            </div>
+          </section>
+        ) : null}
 
-            <section className="pb-10">
-              <h2 className="mb-6 text-center text-2xl font-extrabold text-orange-950 md:text-3xl">
-                식구와 함께라면 달라지는 일상 🍚
-              </h2>
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  {
-                    emoji: '🛵',
-                    title: '배달비 절약',
-                    body: '부담스러운 배달 팁, 근처 이웃과 함께 주문하고 반값으로 줄여보세요. 🍕🍗',
-                  },
-                  {
-                    emoji: '🍱',
-                    title: '반찬 나눔',
-                    body: '혼자 먹기엔 너무 많은 양의 반찬, 정성껏 만들어 이웃과 서로 바꿔 먹어요. 🍚',
-                  },
-                  {
-                    emoji: '🛒',
-                    title: '장보기 쉐어',
-                    body: '대용량 식재료가 고민될 때, 이웃과 필요한 만큼만 나누어 구매하세요. 🥬🍎',
-                  },
-                ].map((item) => (
-                  <article
-                    key={item.title}
-                    className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm"
-                  >
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 text-3xl">
-                      {item.emoji}
-                    </div>
-                    <h3 className="mb-2 text-xl font-bold text-orange-950">{item.title}</h3>
-                    <p className="text-orange-900/75">{item.body}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-          </>
-        ) : showOnboarding ? (
+        {appPhase === 'onboarding' ? (
           <section className="mx-auto max-w-3xl rounded-3xl border border-orange-200 bg-white p-6 shadow-sm md:mt-12 md:p-8">
+            <p className="mb-2 text-sm text-orange-900/70">
+              새 식구 <span className="font-semibold text-orange-950">{userId.trim()}</span> — 지역과
+              선호를 알려주세요.
+            </p>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-extrabold text-orange-950">온보딩 Step {step}</h2>
+              <h2 className="text-2xl font-extrabold text-orange-950">프로필 만들기 Step {step}</h2>
               <span className="rounded-full bg-orange-100 px-3 py-1 text-sm font-semibold text-primary">
                 Step {step}/3
               </span>
@@ -203,22 +218,6 @@ function App() {
                       ? '당신이 식구에게 기여할 수 있는 강점은 무엇인가요?'
                       : '어디에서 식구를 찾고 싶은지 생활권 위치를 입력해 주세요.'}
                 </p>
-
-                {step === 1 && (
-                  <div className="space-y-2">
-                    <label htmlFor="userId" className="block text-sm font-semibold text-orange-950">
-                      사용할 아이디
-                    </label>
-                    <input
-                      id="userId"
-                      type="text"
-                      value={userId}
-                      onChange={(event) => setUserId(event.target.value)}
-                      placeholder="예: sikgu_justin"
-                      className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
-                    />
-                  </div>
-                )}
 
                 {step < 3 ? (
                   <div className="grid gap-3">
@@ -290,7 +289,8 @@ function App() {
                 type="button"
                 onClick={() => {
                   if (step === 1) {
-                    setShowOnboarding(false)
+                    setAppPhase('identify')
+                    setDraftUserId(userId)
                     return
                   }
                   setStepDirection(-1)
@@ -308,9 +308,7 @@ function App() {
                     setStep(Math.min(step + 1, 3))
                     return
                   }
-                  setShowOnboarding(false)
-                  setShowMainFeed(true)
-                  setMainView('feed')
+                  handleOnboardingFinish()
                 }}
                 className="rounded-full bg-orange-950 px-6 py-3 font-bold text-white transition hover:bg-primary"
               >
@@ -318,9 +316,11 @@ function App() {
               </button>
             </div>
           </section>
-        ) : (
+        ) : null}
+
+        {appPhase === 'main' ? (
           <section className="mx-auto max-w-4xl space-y-6 py-8">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setMainView('feed')}
@@ -343,6 +343,16 @@ function App() {
               >
                 히스토리
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDraftUserId('')
+                  setAppPhase('identify')
+                }}
+                className="ml-auto rounded-full border border-orange-200 bg-white px-4 py-2 text-sm font-semibold text-orange-900/80"
+              >
+                다른 아이디
+              </button>
             </div>
 
             {mainView === 'feed' ? (
@@ -354,9 +364,33 @@ function App() {
                     관심사와 위치를 바탕으로 식생활을 함께 해결할 식구 그룹을 추천해드려요.
                   </p>
                   {userId.trim() ? (
-                    <p className="mt-3 text-sm text-orange-900/60">
-                      로그인 아이디: <span className="font-semibold text-orange-950">{userId.trim()}</span>
-                    </p>
+                    <div className="mt-3 space-y-1 text-sm text-orange-900/70">
+                      <p>
+                        아이디:{' '}
+                        <span className="font-semibold text-orange-950">{userId.trim()}</span>
+                      </p>
+                      {(userRecord?.location || location) ? (
+                        <p>
+                          생활권:{' '}
+                          <span className="font-medium text-orange-950">
+                            {userRecord?.location || location}
+                          </span>
+                        </p>
+                      ) : null}
+                      {userRecord?.preferences?.needs?.length ? (
+                        <p>
+                          니즈{' '}
+                          <span className="font-medium text-orange-950">
+                            {userRecord.preferences.needs.length}
+                          </span>
+                          개 · 역량{' '}
+                          <span className="font-medium text-orange-950">
+                            {userRecord.preferences.talents?.length ?? 0}
+                          </span>
+                          개
+                        </p>
+                      ) : null}
+                    </div>
                   ) : null}
                 </div>
 
@@ -424,6 +458,34 @@ function App() {
                   </div>
                 ) : null}
 
+                <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
+                  <h3 className="text-sm font-semibold text-primary">저장된 선호 · 지역</h3>
+                  {userRecord?.location || location ? (
+                    <p className="mt-2 text-sm text-orange-900/80">
+                      생활권: {userRecord?.location || location}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm text-orange-900/60">생활권 정보가 없어요.</p>
+                  )}
+                  {userRecord?.preferences ? (
+                    <div className="mt-3 text-sm text-orange-900/80">
+                      <p>
+                        니즈 ID: {(userRecord.preferences.needs || []).join(', ') || '—'}
+                      </p>
+                      <p className="mt-1">
+                        역량 ID: {(userRecord.preferences.talents || []).join(', ') || '—'}
+                      </p>
+                      {userRecord.preferences.customNeed ? (
+                        <p className="mt-2 text-orange-900/70">
+                          메모: {userRecord.preferences.customNeed}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-orange-900/60">선호 정보가 없어요.</p>
+                  )}
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-3">
                   <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
                     <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">
@@ -433,7 +495,7 @@ function App() {
                       {profile?.displayName ?? '프로필 없음'}
                     </h3>
                     <p className="text-sm text-orange-900/70">
-                      {profile?.level ? `Level: ${profile.level}` : 'users.json에 아이디를 등록해 주세요'}
+                      {profile?.level ? `Level: ${profile.level}` : '레벨 정보 없음'}
                     </p>
                   </article>
                   <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
@@ -458,16 +520,12 @@ function App() {
                     </button>
                   </div>
                   {!userId.trim() ? (
-                    <p className="text-sm text-orange-900/70">
-                      온보딩에서 아이디를 입력하면 히스토리를 불러올 수 있어요.
-                    </p>
+                    <p className="text-sm text-orange-900/70">아이디가 없어요.</p>
                   ) : dbLoading ? (
                     <p className="text-sm text-orange-900/70">히스토리를 불러오는 중이에요…</p>
                   ) : !userRecord ? (
                     <p className="text-sm text-orange-900/70">
-                      <span className="font-semibold text-orange-950">{userId.trim()}</span>에 해당하는
-                      사용자가 <code className="text-xs">public/local_db/users.json</code>에 없어요. 키를
-                      추가해 주세요.
+                      사용자 데이터를 찾을 수 없어요. 아이디 게이트에서 다시 시도해 주세요.
                     </p>
                   ) : historyEntries.length === 0 ? (
                     <p className="text-sm text-orange-900/70">아직 기록된 식구가 없어요.</p>
@@ -498,7 +556,7 @@ function App() {
               </>
             )}
           </section>
-        )}
+        ) : null}
       </main>
 
       <footer className="border-t border-orange-100 bg-orange-50 py-8 text-center text-sm text-orange-900/70">

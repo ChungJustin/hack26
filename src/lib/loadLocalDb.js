@@ -28,3 +28,44 @@ export function resolveUserRecord(usersPayload, rawUserId) {
   if (!users || typeof users !== 'object') return null
   return users[key] ?? null
 }
+
+const LOCAL_USERS_STORAGE_KEY = 'sikgu_local_users_v1'
+
+export function readLocalUsersMap() {
+  try {
+    const raw = localStorage.getItem(LOCAL_USERS_STORAGE_KEY)
+    if (!raw) return {}
+    const data = JSON.parse(raw)
+    return data && typeof data === 'object' ? data : {}
+  } catch {
+    return {}
+  }
+}
+
+export function writeLocalUsersMap(map) {
+  localStorage.setItem(LOCAL_USERS_STORAGE_KEY, JSON.stringify(map))
+}
+
+export function upsertLocalUser(userId, record) {
+  const key = String(userId ?? '').trim()
+  if (!key) return
+  const map = readLocalUsersMap()
+  map[key] = record
+  writeLocalUsersMap(map)
+}
+
+export async function loadMergedUsersPayload() {
+  const seed = await loadUsersPayload()
+  const local = readLocalUsersMap()
+  return {
+    users: { ...(seed.users || {}), ...local },
+  }
+}
+
+export function resolveUserFromMerged(mergedPayload, rawUserId) {
+  const key = String(rawUserId ?? '').trim()
+  if (!key) return null
+  const users = mergedPayload?.users
+  if (!users || typeof users !== 'object') return null
+  return users[key] ?? null
+}
