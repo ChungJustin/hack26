@@ -1,13 +1,25 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { Bell, UserCircle2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  loadGroupsPayload,
+  loadUsersPayload,
+  resolveUserRecord,
+} from './lib/loadLocalDb'
 import { useOnboardingStore } from './store/useOnboardingStore'
+
+const FEED_TABS = ['전체', '반찬', '요리', '공동구매', '배달']
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showMainFeed, setShowMainFeed] = useState(false)
   const [mainView, setMainView] = useState('feed')
   const [stepDirection, setStepDirection] = useState(1)
+  const [feedGroups, setFeedGroups] = useState([])
+  const [userRecord, setUserRecord] = useState(null)
+  const [dbLoading, setDbLoading] = useState(false)
+  const [dbError, setDbError] = useState(null)
+  const [activeFeedTab, setActiveFeedTab] = useState('전체')
   const {
     step,
     setStep,
@@ -24,6 +36,45 @@ function App() {
     setCustomNeed,
     setUserId,
   } = useOnboardingStore()
+
+  useEffect(() => {
+    if (!showMainFeed) return undefined
+
+    let cancelled = false
+
+    async function load() {
+      setDbLoading(true)
+      setDbError(null)
+      try {
+        const [groupsPayload, usersPayload] = await Promise.all([
+          loadGroupsPayload(),
+          loadUsersPayload(),
+        ])
+        if (cancelled) return
+        setFeedGroups(Array.isArray(groupsPayload?.groups) ? groupsPayload.groups : [])
+        setUserRecord(resolveUserRecord(usersPayload, userId))
+      } catch (err) {
+        if (!cancelled) {
+          setDbError(err instanceof Error ? err.message : '데이터를 불러오지 못했어요.')
+        }
+      } finally {
+        if (!cancelled) setDbLoading(false)
+      }
+    }
+
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [showMainFeed, userId])
+
+  const filteredGroups = useMemo(() => {
+    if (activeFeedTab === '전체') return feedGroups
+    return feedGroups.filter((g) => g.category === activeFeedTab)
+  }, [feedGroups, activeFeedTab])
+
+  const historyEntries = userRecord?.history ?? []
+  const profile = userRecord?.profile
 
   return (
     <div className="min-h-screen bg-background-warm text-text-main">
@@ -302,15 +353,27 @@ function App() {
                   <p className="mt-2 text-orange-900/75">
                     관심사와 위치를 바탕으로 식생활을 함께 해결할 식구 그룹을 추천해드려요.
                   </p>
+                  {userId.trim() ? (
+                    <p className="mt-3 text-sm text-orange-900/60">
+                      로그인 아이디: <span className="font-semibold text-orange-950">{userId.trim()}</span>
+                    </p>
+                  ) : null}
                 </div>
 
+                {dbError ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    {dbError}
+                  </div>
+                ) : null}
+
                 <div className="flex flex-wrap gap-2">
-                  {['전체', '반찬', '요리', '공동구매', '배달'].map((tab) => (
+                  {FEED_TABS.map((tab) => (
                     <button
                       key={tab}
                       type="button"
+                      onClick={() => setActiveFeedTab(tab)}
                       className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                        tab === '전체'
+                        tab === activeFeedTab
                           ? 'bg-primary text-white'
                           : 'border border-orange-200 bg-white text-orange-900/80'
                       }`}
@@ -320,67 +383,70 @@ function App() {
                   ))}
                 </div>
 
-                <div className="grid gap-4">
-                  {[
-                    {
-                      title: '반찬 나눠요! 🍱',
-                      body: '장조림/멸치볶음 같이 나눌 분 찾습니다. 같은 단지면 저녁 전달 가능해요.',
-                      tag: '반찬',
-                    },
-                    {
-                      title: '식재료 나누고 가끔 같이 만들어 먹어요 🍝',
-                      body: '파스타 좋아하는 분! 면/소스/치즈 소분하고 주말에 같이 만들어 먹어요.',
-                      tag: '요리',
-                    },
-                    {
-                      title: '같이 코스트코에 장보러 가서 재료 나눠요 🛒',
-                      body: '돼지고기/과일 같이 사고 소분할 분 모집합니다. 3~4명 정도 생각 중이에요.',
-                      tag: '공동구매',
-                    },
-                    {
-                      title: '배달비 아끼려고 같이 시켜요 🍕',
-                      body: '오늘 저녁 피자 같이 주문할 분! 배달비 나눠서 부담해요.',
-                      tag: '배달',
-                    },
-                  ].map((group) => (
-                    <article
-                      key={group.title}
-                      className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
-                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
-                          {group.tag}
-                        </span>
-                      </div>
-                      <p className="mb-4 text-orange-900/75">{group.body}</p>
-                      <button
-                        type="button"
-                        className="rounded-full bg-orange-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-primary"
-                      >
-                        참여하기
-                      </button>
-                    </article>
-                  ))}
-                </div>
+                {dbLoading ? (
+                  <p className="text-center text-orange-900/70">식구 그룹을 불러오는 중이에요…</p>
+                ) : (
+                  <div className="grid gap-4">
+                    {filteredGroups.length === 0 ? (
+                      <p className="rounded-2xl border border-orange-100 bg-white px-4 py-8 text-center text-orange-900/70">
+                        이 카테고리에 표시할 그룹이 없어요.
+                      </p>
+                    ) : (
+                      filteredGroups.map((group) => (
+                        <article
+                          key={group.id}
+                          className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
+                        >
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
+                            <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
+                              {group.tag}
+                            </span>
+                          </div>
+                          <p className="mb-4 text-orange-900/75">{group.body}</p>
+                          <button
+                            type="button"
+                            className="rounded-full bg-orange-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-primary"
+                          >
+                            참여하기
+                          </button>
+                        </article>
+                      ))
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <>
+                {dbError ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    {dbError}
+                  </div>
+                ) : null}
+
                 <div className="grid gap-4 md:grid-cols-3">
                   <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
                     <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">
-                      🐔
+                      {profile?.badgeEmoji ?? '👤'}
                     </div>
-                    <h3 className="text-xl font-bold text-primary">Happy Diner</h3>
-                    <p className="text-sm text-orange-900/70">Level: Grand Sikgu Master</p>
+                    <h3 className="text-xl font-bold text-primary">
+                      {profile?.displayName ?? '프로필 없음'}
+                    </h3>
+                    <p className="text-sm text-orange-900/70">
+                      {profile?.level ? `Level: ${profile.level}` : 'users.json에 아이디를 등록해 주세요'}
+                    </p>
                   </article>
                   <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
                     <p className="text-sm text-orange-900/70">Total Meals Shared</p>
-                    <p className="mt-2 text-4xl font-extrabold text-primary">15</p>
+                    <p className="mt-2 text-4xl font-extrabold text-primary">
+                      {profile?.stats?.mealsShared ?? '—'}
+                    </p>
                   </article>
                   <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
                     <p className="text-sm text-orange-900/70">Active Sikgus</p>
-                    <p className="mt-2 text-4xl font-extrabold text-primary">3</p>
+                    <p className="mt-2 text-4xl font-extrabold text-primary">
+                      {profile?.stats?.activeSikgus ?? '—'}
+                    </p>
                   </article>
                 </div>
 
@@ -391,36 +457,43 @@ function App() {
                       See All
                     </button>
                   </div>
-                  <div className="space-y-3">
-                    {[
-                      { name: 'Coding Slave', detail: '반찬 나눔 5회', time: 'Shared 2d ago', emoji: '🐔' },
-                      {
-                        name: 'CodingCoding',
-                        detail: '코스트코 장보기 2회',
-                        time: 'Shared 1w ago',
-                        emoji: '🐥',
-                      },
-                      { name: 'Linuxias', detail: '첫 식구 대기 중', time: 'Say Hello!', emoji: '🐣' },
-                    ].map((person) => (
-                      <article
-                        key={person.name}
-                        className="flex items-center justify-between rounded-2xl border border-orange-50 bg-white p-4"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-2xl">
-                            {person.emoji}
+                  {!userId.trim() ? (
+                    <p className="text-sm text-orange-900/70">
+                      온보딩에서 아이디를 입력하면 히스토리를 불러올 수 있어요.
+                    </p>
+                  ) : dbLoading ? (
+                    <p className="text-sm text-orange-900/70">히스토리를 불러오는 중이에요…</p>
+                  ) : !userRecord ? (
+                    <p className="text-sm text-orange-900/70">
+                      <span className="font-semibold text-orange-950">{userId.trim()}</span>에 해당하는
+                      사용자가 <code className="text-xs">public/local_db/users.json</code>에 없어요. 키를
+                      추가해 주세요.
+                    </p>
+                  ) : historyEntries.length === 0 ? (
+                    <p className="text-sm text-orange-900/70">아직 기록된 식구가 없어요.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {historyEntries.map((person) => (
+                        <article
+                          key={person.id}
+                          className="flex items-center justify-between rounded-2xl border border-orange-50 bg-white p-4"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-2xl">
+                              {person.emoji}
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-orange-950">{person.name}</h4>
+                              <p className="text-sm text-orange-900/70">{person.detail}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-orange-950">{person.name}</h4>
-                            <p className="text-sm text-orange-900/70">{person.detail}</p>
-                          </div>
-                        </div>
-                        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-900/70">
-                          {person.time}
-                        </span>
-                      </article>
-                    ))}
-                  </div>
+                          <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-900/70">
+                            {person.timeLabel}
+                          </span>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </>
             )}

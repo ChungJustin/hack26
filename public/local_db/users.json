@@ -1,0 +1,58 @@
+{
+  "users": {
+    "sikgu_justin": {
+      "profile": {
+        "displayName": "Happy Diner",
+        "level": "Grand Sikgu Master",
+        "badgeEmoji": "🐔",
+        "stats": {
+          "mealsShared": 15,
+          "activeSikgus": 3
+        }
+      },
+      "history": [
+        {
+          "id": "h1",
+          "name": "Coding Slave",
+          "detail": "반찬 나눔 5회",
+          "timeLabel": "Shared 2d ago",
+          "emoji": "🐔"
+        },
+        {
+          "id": "h2",
+          "name": "CodingCoding",
+          "detail": "코스트코 장보기 2회",
+          "timeLabel": "Shared 1w ago",
+          "emoji": "🐥"
+        },
+        {
+          "id": "h3",
+          "name": "Linuxias",
+          "detail": "첫 식구 대기 중",
+          "timeLabel": "Say Hello!",
+          "emoji": "🐣"
+        }
+      ]
+    },
+    "hacker_one": {
+      "profile": {
+        "displayName": "새내기 식구",
+        "level": "Sikgu Starter",
+        "badgeEmoji": "🐣",
+        "stats": {
+          "mealsShared": 2,
+          "activeSikgus": 1
+        }
+      },
+      "history": [
+        {
+          "id": "h1",
+          "name": "이웃 A",
+          "detail": "배달 쉐어 1회",
+          "timeLabel": "3d ago",
+          "emoji": "🍕"
+        }
+      ]
+    }
+  }
+}
