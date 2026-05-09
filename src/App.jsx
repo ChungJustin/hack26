@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bell, UserCircle2 } from 'lucide-react'
+import { Bell, MapPin, UserCircle2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
   loadGroupsPayload,
@@ -11,6 +11,19 @@ import { useOnboardingStore } from './store/useOnboardingStore'
 
 const FEED_TABS = ['전체', '반찬', '요리', '공동구매', '배달']
 
+function formatDistanceLine(group) {
+  const m = group?.distanceMeters
+  const walk = group?.walkMinutes
+  if (m == null && walk == null) return null
+  const parts = []
+  if (walk != null) parts.push(`도보 약 ${walk}분`)
+  if (m != null) {
+    const n = Number(m)
+    parts.push(n >= 1000 ? `직선 약 ${(n / 1000).toFixed(1)}km` : `직선 약 ${Math.round(n)}m`)
+  }
+  return parts.join(' · ')
+}
+
 function App() {
   const [appPhase, setAppPhase] = useState('identify')
   const [mainView, setMainView] = useState('feed')
@@ -20,6 +33,12 @@ function App() {
   const [dbLoading, setDbLoading] = useState(false)
   const [dbError, setDbError] = useState(null)
   const [activeFeedTab, setActiveFeedTab] = useState('전체')
+  const [feedSearchInput, setFeedSearchInput] = useState('')
+  const [feedSearchApplied, setFeedSearchApplied] = useState('')
+  const [createGroupOpen, setCreateGroupOpen] = useState(false)
+  const [newGroupTitle, setNewGroupTitle] = useState('')
+  const [newGroupBody, setNewGroupBody] = useState('')
+  const [newGroupCategory, setNewGroupCategory] = useState('반찬')
 
   const [draftUserId, setDraftUserId] = useState('')
   const [identifyLoading, setIdentifyLoading] = useState(false)
@@ -76,9 +95,19 @@ function App() {
   }, [appPhase, userId])
 
   const filteredGroups = useMemo(() => {
-    if (activeFeedTab === '전체') return feedGroups
-    return feedGroups.filter((g) => g.category === activeFeedTab)
-  }, [feedGroups, activeFeedTab])
+    let list = feedGroups
+    if (activeFeedTab !== '전체') {
+      list = list.filter((g) => g.category === activeFeedTab)
+    }
+    const q = feedSearchApplied.trim().toLowerCase()
+    if (!q) return list
+    return list.filter((g) => {
+      const title = String(g.title ?? '').toLowerCase()
+      const body = String(g.body ?? '').toLowerCase()
+      const tag = String(g.tag ?? '').toLowerCase()
+      return title.includes(q) || body.includes(q) || tag.includes(q)
+    })
+  }, [feedGroups, activeFeedTab, feedSearchApplied])
 
   const historyEntries = userRecord?.history ?? []
   const profile = userRecord?.profile
@@ -320,6 +349,103 @@ function App() {
 
         {appPhase === 'main' ? (
           <section className="mx-auto max-w-4xl space-y-6 py-8">
+            <div className="rounded-3xl border border-orange-100 bg-white p-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  type="search"
+                  value={feedSearchInput}
+                  onChange={(e) => setFeedSearchInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setFeedSearchApplied(feedSearchInput.trim())
+                    }
+                  }}
+                  placeholder="키워드로 식구 그룹 검색…"
+                  className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-3 text-orange-950 outline-none transition focus:border-primary focus:bg-white"
+                  aria-label="식구 그룹 검색"
+                />
+                <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setFeedSearchApplied(feedSearchInput.trim())}
+                    className="rounded-full bg-orange-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-primary"
+                  >
+                    검색
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCreateGroupOpen((o) => !o)}
+                    className="rounded-full border-2 border-primary bg-white px-5 py-3 text-sm font-bold text-primary transition hover:bg-orange-50"
+                  >
+                    식구그룹 만들기
+                  </button>
+                </div>
+              </div>
+              {createGroupOpen ? (
+                <div className="mt-4 space-y-3 border-t border-orange-100 pt-4">
+                  <p className="text-sm font-semibold text-orange-950">새 그룹 등록 (로컬에만 추가)</p>
+                  <input
+                    type="text"
+                    value={newGroupTitle}
+                    onChange={(e) => setNewGroupTitle(e.target.value)}
+                    placeholder="제목"
+                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-2.5 text-orange-950 outline-none focus:border-primary focus:bg-white"
+                  />
+                  <textarea
+                    value={newGroupBody}
+                    onChange={(e) => setNewGroupBody(e.target.value)}
+                    rows={3}
+                    placeholder="설명"
+                    className="w-full rounded-2xl border border-orange-200 bg-orange-50/60 px-4 py-2.5 text-orange-950 outline-none focus:border-primary focus:bg-white"
+                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm text-orange-900/80">
+                      카테고리
+                      <select
+                        value={newGroupCategory}
+                        onChange={(e) => setNewGroupCategory(e.target.value)}
+                        className="rounded-xl border border-orange-200 bg-white px-3 py-2 text-sm font-medium text-orange-950"
+                      >
+                        {FEED_TABS.filter((t) => t !== '전체').map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const title = newGroupTitle.trim()
+                        const body = newGroupBody.trim()
+                        if (!title || !body) return
+                        const tag = newGroupCategory
+                        setFeedGroups((prev) => [
+                          {
+                            id: `grp_local_${Date.now()}`,
+                            title,
+                            body,
+                            tag,
+                            category: newGroupCategory,
+                            distanceMeters: 400,
+                            walkMinutes: 5,
+                          },
+                          ...prev,
+                        ])
+                        setNewGroupTitle('')
+                        setNewGroupBody('')
+                        setCreateGroupOpen(false)
+                        setMainView('feed')
+                      }}
+                      className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-white"
+                    >
+                      등록하기
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -361,7 +487,8 @@ function App() {
                   <p className="text-sm font-semibold text-primary">환영해요!</p>
                   <h2 className="mt-1 text-2xl font-extrabold text-orange-950">내 주변 식구 찾기</h2>
                   <p className="mt-2 text-orange-900/75">
-                    관심사와 위치를 바탕으로 식생활을 함께 해결할 식구 그룹을 추천해드려요.
+                    관심사와 위치를 바탕으로 식생활을 함께 해결할 식구 그룹을 추천해드려요. 카드의 거리는 내
+                    생활권 기준 예상치예요.
                   </p>
                   {userId.trim() ? (
                     <div className="mt-3 space-y-1 text-sm text-orange-900/70">
@@ -431,12 +558,18 @@ function App() {
                           key={group.id}
                           className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
                         >
-                          <div className="mb-2 flex items-center justify-between gap-2">
+                          <div className="mb-2 flex items-start justify-between gap-2">
                             <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
                             <span className="shrink-0 rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
                               {group.tag}
                             </span>
                           </div>
+                          {formatDistanceLine(group) ? (
+                            <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-orange-900/80">
+                              <MapPin className="shrink-0 text-primary" size={16} aria-hidden />
+                              <span>{formatDistanceLine(group)}</span>
+                            </div>
+                          ) : null}
                           <p className="mb-4 text-orange-900/75">{group.body}</p>
                           <button
                             type="button"

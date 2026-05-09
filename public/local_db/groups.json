@@ -5,70 +5,90 @@
       "title": "반찬 나눠요! 🍱",
       "body": "장조림/멸치볶음 같이 나눌 분 찾습니다. 같은 단지면 저녁 전달 가능해요.",
       "tag": "반찬",
-      "category": "반찬"
+      "category": "반찬",
+      "distanceMeters": 120,
+      "walkMinutes": 2
     },
     {
       "id": "grp_cook_01",
       "title": "식재료 나누고 가끔 같이 만들어 먹어요 🍝",
       "body": "파스타 좋아하는 분! 면/소스/치즈 소분하고 주말에 같이 만들어 먹어요.",
       "tag": "요리",
-      "category": "요리"
+      "category": "요리",
+      "distanceMeters": 480,
+      "walkMinutes": 6
     },
     {
       "id": "grp_mart_01",
       "title": "같이 코스트코에 장보러 가서 재료 나눠요 🛒",
       "body": "돼지고기/과일 같이 사고 소분할 분 모집합니다. 3~4명 정도 생각 중이에요.",
       "tag": "공동구매",
-      "category": "공동구매"
+      "category": "공동구매",
+      "distanceMeters": 3200,
+      "walkMinutes": 40
     },
     {
       "id": "grp_delivery_01",
       "title": "배달비 아끼려고 같이 시켜요 🍕",
       "body": "오늘 저녁 피자 같이 주문할 분! 배달비 나눠서 부담해요.",
       "tag": "배달",
-      "category": "배달"
+      "category": "배달",
+      "distanceMeters": 80,
+      "walkMinutes": 1
     },
     {
       "id": "grp_side_02",
       "title": "주말 반찬 교환 🥬",
       "body": "김치볶음/계란말이 교환해요. 양은 2~3인분 정도 나눠드릴 수 있어요.",
       "tag": "반찬",
-      "category": "반찬"
+      "category": "반찬",
+      "distanceMeters": 350,
+      "walkMinutes": 5
     },
     {
       "id": "grp_delivery_02",
       "title": "족발 반반 나눠요 🍖",
       "body": "최소주문 맞추기 어려운 분 같이 시켜요. 1층 로비에서 나눠 가져가요.",
       "tag": "배달",
-      "category": "배달"
+      "category": "배달",
+      "distanceMeters": 50,
+      "walkMinutes": 1
     },
     {
       "id": "grp_mart_02",
       "title": "쿠팡프레쉬 채소 소분 🥕",
       "body": "당근/양파 묶음이 커서 소분할 분 찾아요. 같은 오피스텔이면 좋아요.",
       "tag": "공동구매",
-      "category": "공동구매"
+      "category": "공동구매",
+      "distanceMeters": 200,
+      "walkMinutes": 3
     },
     {
       "id": "grp_cook_02",
       "title": "토요일 점심 파스타 모임 👩‍🍳",
       "body": "면과 소스는 제가 준비할게요. 채즈/샐러드 재료는 같이 나눠요.",
       "tag": "요리",
-      "category": "요리"
+      "category": "요리",
+      "distanceMeters": 890,
+      "walkMinutes": 11
     },
     {
       "id": "grp_friend_01",
       "title": "저녁 같이 밥 먹을 분 🍚",
       "body": "혼밥이 심심해서 가끔 같이 먹을 사람 찾아요. 부담 없이 연락 주세요.",
       "tag": "같이먹기",
-      "category": "요리"
+      "category": "요리",
+      "distanceMeters": 1500,
+      "walkMinutes": 19
     },
     {
       "id": "grp_delivery_03",
       "title": "치킨 반반 쉐어 🍗",
       "body": "양념/후라이드 반반 시켜서 나눠 먹어요. 배달비는 N분할.",
       "tag": "배달",
-      "category": "배달"
+      "category": "배달",
+      "distanceMeters": 220,
+      "walkMinutes": 3
     }
   ]
 }
