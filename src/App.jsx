@@ -103,6 +103,7 @@ function App() {
   const [aiError, setAiError] = useState(null)
   const [aiTried, setAiTried] = useState(false)
   const [geminiDebug, setGeminiDebug] = useState(null)
+  const [aiUserNote, setAiUserNote] = useState('')
   const [joinedGroupIds, setJoinedGroupIds] = useState([])
 
   const [draftUserId, setDraftUserId] = useState('')
@@ -237,6 +238,7 @@ function App() {
         apiKey: key,
         userSummary: geminiUserSummary,
         groups: feedGroups,
+        userNote: aiUserNote,
       })
       setAiRecItems(items)
       setGeminiDebug(debug)
@@ -746,6 +748,20 @@ function App() {
                     <code className="rounded bg-orange-100 px-1 text-xs">VITE_GEMINI_API_KEY</code> 환경
                     변수도 사용할 수 있어요.
                   </p>
+                  <div className="mt-4">
+                    <label htmlFor="gemini-user-note" className="text-xs font-semibold text-orange-900/80">
+                      이번 추천에 반영할 내 의견 <span className="font-normal text-orange-900/55">(선택)</span>
+                    </label>
+                    <textarea
+                      id="gemini-user-note"
+                      value={aiUserNote}
+                      onChange={(e) => setAiUserNote(e.target.value)}
+                      rows={3}
+                      maxLength={2000}
+                      placeholder="예: 이번 주말만 시간 돼요 · 매운 음식은 피하고 싶어요 · 배달 나눔 위주로 보고 싶어요"
+                      className="mt-1 w-full resize-y rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm text-orange-950 outline-none focus:border-primary"
+                    />
+                  </div>
                   <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-end">
                     <div className="min-w-0 flex-1">
                       <label htmlFor="gemini-key" className="text-xs font-semibold text-orange-900/80">

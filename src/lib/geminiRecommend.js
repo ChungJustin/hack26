@@ -147,10 +147,10 @@ function normalizeRecommendationsPayload(parsed) {
 }
 
 /**
- * @param {{ apiKey: string, userSummary: object, groups: object[] }} params
+ * @param {{ apiKey: string, userSummary: object, groups: object[], userNote?: string }} params
  * @returns {Promise<{ items: { id: string, reason: string }[], debug: Record<string, unknown> }>}
  */
-export async function fetchGeminiGroupRecommendations({ apiKey, userSummary, groups }) {
+export async function fetchGeminiGroupRecommendations({ apiKey, userSummary, groups, userNote }) {
   const key = String(apiKey ?? '').trim()
   if (!key) {
     throw new GeminiRecommendError('Gemini API 키가 비어 있어요.')
@@ -166,11 +166,22 @@ export async function fetchGeminiGroupRecommendations({ apiKey, userSummary, gro
     walkMinutes: g.walkMinutes,
   }))
 
+  const note = String(userNote ?? '').trim()
+
   const prompt = `당신은 한국 1인 가구 식생활 공유 앱 "식구(Sikgu)"의 추천 도우미입니다.
 
 아래 사용자 정보와 모집 그룹 목록을 보고, 이 사용자에게 가장 잘 맞는 그룹 최대 5개를 고르세요.
 반드시 그룹 목록에 있는 id만 사용하세요. 존재하지 않는 id를 만들지 마세요.
-
+${
+  note ?
+    `
+사용자가 이번 추천 요청에 직접 적은 의견입니다. 프로필·니즈 정보와 함께 반영해 우선순위와 추천 이유를 조정하세요:
+"""
+${note}
+"""
+`
+  : ''
+}
 사용자(JSON):
 ${JSON.stringify(userSummary, null, 2)}
 
