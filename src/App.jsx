@@ -5,9 +5,12 @@ import {
   loadGroupsPayload,
   loadMergedUsersPayload,
   mergeServerAndLocalFeedGroups,
+  getAttendeeUserIdsForGroup,
   prependLocalFeedGroup,
+  readJoinedGroupIds,
   readLocalFeedGroups,
   resolveUserFromMerged,
+  toggleJoinedGroupForUser,
   upsertLocalUser,
 } from './lib/loadLocalDb'
 import {
@@ -34,6 +37,33 @@ function formatDistanceLine(group) {
   return parts.join(' · ')
 }
 
+function GroupAttendeeList({ groupId, currentUserId }) {
+  const ids = getAttendeeUserIdsForGroup(groupId)
+  if (ids.length === 0) return null
+  return (
+    <div className="mt-3 rounded-2xl border border-orange-100 bg-orange-50/70 px-3 py-2.5 text-sm">
+      <p className="font-semibold text-orange-950">
+        참석 중인 식구 <span className="font-bold text-primary">{ids.length}</span>명
+      </p>
+      <ul className="mt-2 flex flex-wrap gap-1.5">
+        {ids.map((id) => (
+          <li
+            key={id}
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              id === currentUserId?.trim()
+                ? 'bg-primary text-white'
+                : 'bg-white text-orange-900/85 ring-1 ring-orange-200/80'
+            }`}
+          >
+            {id}
+            {id === currentUserId?.trim() ? ' (나)' : ''}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function App() {
   const [appPhase, setAppPhase] = useState('identify')
   const [mainView, setMainView] = useState('feed')
@@ -55,6 +85,7 @@ function App() {
   const [aiError, setAiError] = useState(null)
   const [aiTried, setAiTried] = useState(false)
   const [geminiDebug, setGeminiDebug] = useState(null)
+  const [joinedGroupIds, setJoinedGroupIds] = useState([])
 
   const [draftUserId, setDraftUserId] = useState('')
   const [identifyLoading, setIdentifyLoading] = useState(false)
@@ -116,6 +147,21 @@ function App() {
     if (appPhase !== 'identify' && appPhase !== 'main') return
     setGeminiKeyInput(readStoredGeminiApiKey())
   }, [appPhase])
+
+  useEffect(() => {
+    if (appPhase !== 'main') return
+    const uid = userId.trim()
+    if (!uid) {
+      setJoinedGroupIds([])
+      return
+    }
+    setJoinedGroupIds(readJoinedGroupIds(uid))
+  }, [appPhase, userId])
+
+  const joinedGroupsOrdered = useMemo(() => {
+    const byId = new Map(feedGroups.map((g) => [g.id, g]))
+    return joinedGroupIds.map((id) => byId.get(id)).filter(Boolean)
+  }, [feedGroups, joinedGroupIds])
 
   const filteredGroups = useMemo(() => {
     let list = feedGroups
@@ -185,6 +231,13 @@ function App() {
     } finally {
       setAiLoading(false)
     }
+  }
+
+  function handleToggleJoinGroup(groupId) {
+    const uid = userId.trim()
+    if (!uid) return
+    const next = toggleJoinedGroupForUser(uid, groupId)
+    setJoinedGroupIds(next)
   }
 
   async function handleIdentifyContinue() {
@@ -594,6 +647,26 @@ function App() {
               </button>
               <button
                 type="button"
+                onClick={() => setMainView('joined')}
+                className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold ${
+                  mainView === 'joined'
+                    ? 'bg-primary text-white'
+                    : 'border border-orange-200 bg-white text-orange-900/80'
+                }`}
+              >
+                참석 중
+                {joinedGroupIds.length > 0 ? (
+                  <span
+                    className={`ml-1.5 min-w-[1.25rem] rounded-full px-1.5 py-0.5 text-center text-xs font-bold ${
+                      mainView === 'joined' ? 'bg-white/25 text-white' : 'bg-orange-100 text-primary'
+                    }`}
+                  >
+                    {joinedGroupIds.length}
+                  </span>
+                ) : null}
+              </button>
+              <button
+                type="button"
                 onClick={() => {
                   setDraftUserId('')
                   setAppPhase('identify')
@@ -730,6 +803,7 @@ function App() {
                             {formatDistanceLine(g) ? (
                               <p className="mt-2 text-xs text-orange-900/60">{formatDistanceLine(g)}</p>
                             ) : null}
+                            <GroupAttendeeList groupId={g.id} currentUserId={userId} />
                           </li>
                         )
                       })}
@@ -789,15 +863,76 @@ function App() {
                             </div>
                           ) : null}
                           <p className="mb-4 text-orange-900/75">{group.body}</p>
+                          <GroupAttendeeList groupId={group.id} currentUserId={userId} />
                           <button
                             type="button"
-                            className="rounded-full bg-orange-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-primary"
+                            onClick={() => handleToggleJoinGroup(group.id)}
+                            className={`mt-3 rounded-full px-5 py-2 text-sm font-bold transition ${
+                              joinedGroupIds.includes(group.id)
+                                ? 'border-2 border-primary bg-orange-50 text-primary hover:bg-orange-100'
+                                : 'bg-orange-950 text-white hover:bg-primary'
+                            }`}
                           >
-                            참여하기
+                            {joinedGroupIds.includes(group.id) ? '참석 중 · 취소하려면 누르기' : '참여하기'}
                           </button>
                         </article>
                       ))
                     )}
+                  </div>
+                )}
+              </>
+            ) : mainView === 'joined' ? (
+              <>
+                {dbError ? (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    {dbError}
+                  </div>
+                ) : null}
+
+                <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
+                  <h2 className="text-xl font-extrabold text-orange-950">참석 중인 식구 그룹</h2>
+                  <p className="mt-2 text-sm text-orange-900/75">
+                    피드에서 「참여하기」로 참가 신청한 모임만 모아 보여요. 같은 브라우저·아이디 기준으로 이
+                    기기에만 저장돼요.
+                  </p>
+                </div>
+
+                {dbLoading ? (
+                  <p className="text-center text-orange-900/70">식구 그룹을 불러오는 중이에요…</p>
+                ) : joinedGroupsOrdered.length === 0 ? (
+                  <p className="rounded-2xl border border-orange-100 bg-white px-4 py-10 text-center text-orange-900/70">
+                    아직 참석 중인 그룹이 없어요. 「피드」 탭에서 마음에 드는 모임에 참여해 보세요.
+                  </p>
+                ) : (
+                  <div className="grid gap-4">
+                    {joinedGroupsOrdered.map((group) => (
+                      <article
+                        key={group.id}
+                        className="rounded-3xl border border-primary/30 bg-gradient-to-b from-orange-50/80 to-white p-5 shadow-sm"
+                      >
+                        <div className="mb-2 flex items-start justify-between gap-2">
+                          <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
+                          <span className="shrink-0 rounded-full bg-primary/15 px-3 py-1 text-xs font-semibold text-primary">
+                            참석 예정
+                          </span>
+                        </div>
+                        {formatDistanceLine(group) ? (
+                          <div className="mb-3 flex items-center gap-1.5 text-sm font-medium text-orange-900/80">
+                            <MapPin className="shrink-0 text-primary" size={16} aria-hidden />
+                            <span>{formatDistanceLine(group)}</span>
+                          </div>
+                        ) : null}
+                        <p className="mb-4 text-orange-900/75">{group.body}</p>
+                        <GroupAttendeeList groupId={group.id} currentUserId={userId} />
+                        <button
+                          type="button"
+                          onClick={() => handleToggleJoinGroup(group.id)}
+                          className="mt-3 rounded-full border border-orange-200 bg-white px-5 py-2 text-sm font-bold text-orange-950 transition hover:bg-orange-50"
+                        >
+                          참여 취소
+                        </button>
+                      </article>
+                    ))}
                   </div>
                 )}
               </>

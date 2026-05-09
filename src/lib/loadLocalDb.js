@@ -99,3 +99,74 @@ export function mergeServerAndLocalFeedGroups(serverList, localList) {
   const rest = server.filter((g) => g?.id && !seen.has(g.id))
   return [...local, ...rest]
 }
+
+const JOINED_GROUPS_STORAGE_KEY = 'sikgu_joined_groups_v1'
+
+/** @returns {Record<string, string[]>} */
+function readJoinedGroupsMap() {
+  try {
+    const raw = localStorage.getItem(JOINED_GROUPS_STORAGE_KEY)
+    if (!raw) return {}
+    const data = JSON.parse(raw)
+    if (!data || typeof data !== 'object') return {}
+    return data
+  } catch {
+    return {}
+  }
+}
+
+function writeJoinedGroupsMap(map) {
+  localStorage.setItem(JOINED_GROUPS_STORAGE_KEY, JSON.stringify(map))
+}
+
+export function readJoinedGroupIds(userId) {
+  const key = String(userId ?? '').trim()
+  if (!key) return []
+  const map = readJoinedGroupsMap()
+  const ids = map[key]
+  return Array.isArray(ids) ? ids.map(String).filter(Boolean) : []
+}
+
+export function setJoinedGroupIdsForUser(userId, ids) {
+  const key = String(userId ?? '').trim()
+  if (!key) return
+  const map = readJoinedGroupsMap()
+  const next = []
+  const seen = new Set()
+  for (const id of Array.isArray(ids) ? ids : []) {
+    const s = String(id)
+    if (!s || seen.has(s)) continue
+    seen.add(s)
+    next.push(s)
+  }
+  map[key] = next
+  writeJoinedGroupsMap(map)
+}
+
+/** 참여 추가(맨 앞) / 이미 있으면 제거. 갱신된 id 배열 반환 */
+export function toggleJoinedGroupForUser(userId, groupId) {
+  const gid = String(groupId ?? '').trim()
+  if (!gid) return readJoinedGroupIds(userId)
+  let list = readJoinedGroupIds(userId)
+  if (list.includes(gid)) {
+    list = list.filter((x) => x !== gid)
+  } else {
+    list = [gid, ...list.filter((x) => x !== gid)]
+  }
+  setJoinedGroupIdsForUser(userId, list)
+  return list
+}
+
+/** 이 브라우저에 저장된 참여 기록 기준, 해당 그룹에 참석 신청한 아이디 목록 */
+export function getAttendeeUserIdsForGroup(groupId) {
+  const gid = String(groupId ?? '').trim()
+  if (!gid) return []
+  const map = readJoinedGroupsMap()
+  const out = []
+  for (const [uid, ids] of Object.entries(map)) {
+    const key = String(uid).trim()
+    if (!key || !Array.isArray(ids)) continue
+    if (ids.some((x) => String(x) === gid)) out.push(key)
+  }
+  return out.sort((a, b) => a.localeCompare(b, 'ko'))
+}
