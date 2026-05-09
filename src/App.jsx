@@ -77,7 +77,7 @@ function GroupAttendeeList({ groupId, seedAttendeeUserIds, currentUserId, attend
 }
 
 function App() {
-  const [appPhase, setAppPhase] = useState('identify')
+  const [appPhase, setAppPhase] = useState('landing')
   const [mainView, setMainView] = useState('feed')
   const [stepDirection, setStepDirection] = useState(1)
   const [feedGroups, setFeedGroups] = useState([])
@@ -309,17 +309,149 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background-warm text-text-main">
-      <header className="sticky top-0 z-10 border-b border-orange-100 bg-background-warm/95 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-orange-100 bg-background-warm/95 shadow-[0_4px_20px_rgba(255,138,61,0.08)] backdrop-blur">
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4">
-          <div className="text-2xl font-extrabold text-primary">Sikgu 🍚</div>
+          {appPhase === 'landing' || appPhase === 'identify' ? (
+            <button
+              type="button"
+              onClick={() => setAppPhase('landing')}
+              className="text-2xl font-extrabold text-primary hover:opacity-90"
+            >
+              Sikgu 🍚
+            </button>
+          ) : (
+            <div className="text-2xl font-extrabold text-primary">Sikgu 🍚</div>
+          )}
           <div className="flex items-center gap-3 text-primary">
-            <Bell size={20} />
-            <UserCircle2 size={22} />
+            {appPhase === 'landing' ? (
+              <button
+                type="button"
+                onClick={() => setAppPhase('identify')}
+                className="rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:opacity-95"
+              >
+                시작하기
+              </button>
+            ) : (
+              <>
+                <Bell size={20} />
+                <UserCircle2 size={22} />
+              </>
+            )}
           </div>
         </nav>
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-5 pb-20">
+        {appPhase === 'landing' ? (
+          <>
+            <section className="flex flex-col items-center gap-10 py-12 md:flex-row md:items-center md:gap-14 md:py-20">
+              <div className="flex-1 space-y-6 text-center md:text-left">
+                <div className="inline-block rounded-full bg-orange-200/80 px-4 py-1.5 text-sm font-semibold text-orange-950">
+                  저희는 식구를 만들어 줍니다 ✨
+                </div>
+                <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-orange-950 md:text-5xl">
+                  혼자 먹는 밥에서,
+                  <br />
+                  함께하는 <span className="text-primary">식구</span>로
+                </h1>
+                <p className="mx-auto max-w-lg text-lg text-orange-900/80 md:mx-0">
+                  1인 가구의 따뜻한 연결, 식구가 시작합니다. 더 이상 외로운 식사는 그만! 함께 나누는 즐거움을
+                  느껴보세요.
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setAppPhase('identify')}
+                    className="rounded-full bg-primary px-8 py-4 text-lg font-bold text-white shadow-[0_8px_30px_rgba(255,138,61,0.25)] transition hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    식구 시작하기 🐣
+                  </button>
+                </div>
+              </div>
+              <div className="relative w-full flex-1">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-3xl shadow-lg">
+                  <img
+                    alt="식구들이 따뜻하게 식사를 나누는 모습"
+                    className="h-full w-full object-cover"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmvn7JKDeObkDyfgjLIC2wsSnSCBD_FFp_0xn_iCR1teXXvtBjnhkcpHwnYnjMXs4WBHA899gQWYGvbYRYS7pxAdWP8QJFGekw7AD6TV34WT3ae-mzMZR8uyHftsEz2D31dXQnBCWS6t-E8bFzTt8enEzxouWOW1L5DklG0kmApvbLUSUjWOdEJN0XpJU5i2HW2FI-oNbPKRubWfwmrbBfplTel9YTvXXLJSzsoWFydEWGx9CSU90c1QHxM3RkB1CCHREDJO5cmCg"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary/25 to-transparent" aria-hidden />
+                </div>
+                <div className="absolute -bottom-3 -left-1 flex max-w-[min(100%,280px)] items-center gap-3 rounded-2xl border border-orange-100 bg-white p-4 shadow-lg md:-left-4">
+                  <span className="text-3xl" aria-hidden>
+                    🍱
+                  </span>
+                  <div className="min-w-0 text-left">
+                    <p className="text-sm font-bold text-orange-950">오늘의 식구</p>
+                    <p className="text-sm text-orange-900/70">강남구 반찬나눔 중!</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="py-14 md:py-20" id="value-prop">
+              <h2 className="mb-10 text-center text-2xl font-extrabold text-orange-950 md:text-3xl">
+                식구와 함께라면 달라지는 일상 🍚
+              </h2>
+              <div className="grid gap-6 md:grid-cols-3">
+                {[
+                  {
+                    emoji: '🛵',
+                    title: '배달비 절약',
+                    body: '부담스러운 배달 팁, 근처 이웃과 함께 주문하고 반값으로 줄여보세요. 🍕 🍗',
+                    bubble: 'bg-orange-200/70',
+                  },
+                  {
+                    emoji: '🍱',
+                    title: '반찬 나눔',
+                    body: '혼자 먹기엔 너무 많은 양의 반찬, 정성껏 만들어 이웃과 서로 바꿔 먹어요. 🍚 🍱',
+                    bubble: 'bg-emerald-100',
+                  },
+                  {
+                    emoji: '🛒',
+                    title: '장보기 쉐어',
+                    body: '대용량 식재료가 고민될 때, 이웃과 필요한 만큼만 나누어 구매하세요. 🥬 🍎',
+                    bubble: 'bg-sky-100',
+                  },
+                ].map((card) => (
+                  <article
+                    key={card.title}
+                    className="flex flex-col items-center rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-[0_4px_20px_rgba(255,138,61,0.08)] transition duration-300 hover:-translate-y-2"
+                  >
+                    <div
+                      className={`mb-5 flex h-20 w-20 items-center justify-center rounded-full text-4xl ${card.bubble}`}
+                    >
+                      {card.emoji}
+                    </div>
+                    <h3 className="text-lg font-bold text-orange-950">{card.title}</h3>
+                    <p className="mt-3 text-sm leading-relaxed text-orange-900/75">{card.body}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section className="mt-4 rounded-3xl border-2 border-dashed border-primary/30 bg-primary/10 px-6 py-12 text-center md:px-12">
+              <div className="text-5xl" aria-hidden>
+                🐔
+              </div>
+              <h2 className="mt-4 text-2xl font-extrabold text-primary md:text-3xl">
+                당신도 누군가의 식구가 되어보세요
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-lg text-orange-900/80">
+                지금 바로 가입하고 첫 끼니를 함께할 이웃을 찾아보세요.
+                <br />
+                따뜻한 밥상이 기다리고 있습니다.
+              </p>
+              <button
+                type="button"
+                onClick={() => setAppPhase('identify')}
+                className="mt-8 rounded-full bg-orange-950 px-8 py-4 text-lg font-bold text-white transition hover:bg-primary"
+              >
+                아이디로 식구 찾기 🐥
+              </button>
+            </section>
+          </>
+        ) : null}
         {appPhase === 'identify' ? (
           <section className="mx-auto max-w-md space-y-6 py-16">
             <div className="text-center">
