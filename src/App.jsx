@@ -6,6 +6,7 @@ import { useOnboardingStore } from './store/useOnboardingStore'
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showMainFeed, setShowMainFeed] = useState(false)
+  const [mainView, setMainView] = useState('feed')
   const [stepDirection, setStepDirection] = useState(1)
   const {
     step,
@@ -29,18 +30,6 @@ function App() {
       <header className="sticky top-0 z-10 border-b border-orange-100 bg-background-warm/95 backdrop-blur">
         <nav className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-4">
           <div className="text-2xl font-extrabold text-primary">Sikgu 🍚</div>
-          <div className="hidden items-center gap-6 text-sm font-semibold text-primary md:flex">
-            <button type="button">Home</button>
-            <button type="button" className="text-orange-900/80">
-              Dining
-            </button>
-            <button type="button" className="text-orange-900/80">
-              Delivery
-            </button>
-            <button type="button" className="text-orange-900/80">
-              Dishes
-            </button>
-          </div>
           <div className="flex items-center gap-3 text-primary">
             <Bell size={20} />
             <UserCircle2 size={22} />
@@ -270,6 +259,7 @@ function App() {
                   }
                   setShowOnboarding(false)
                   setShowMainFeed(true)
+                  setMainView('feed')
                 }}
                 className="rounded-full bg-orange-950 px-6 py-3 font-bold text-white transition hover:bg-primary"
               >
@@ -279,73 +269,161 @@ function App() {
           </section>
         ) : (
           <section className="mx-auto max-w-4xl space-y-6 py-8">
-            <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
-              <p className="text-sm font-semibold text-primary">환영해요!</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-orange-950">내 주변 식구 찾기</h2>
-              <p className="mt-2 text-orange-900/75">
-                관심사와 위치를 바탕으로 식생활을 함께 해결할 식구 그룹을 추천해드려요.
-              </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setMainView('feed')}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  mainView === 'feed'
+                    ? 'bg-primary text-white'
+                    : 'border border-orange-200 bg-white text-orange-900/80'
+                }`}
+              >
+                피드
+              </button>
+              <button
+                type="button"
+                onClick={() => setMainView('history')}
+                className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                  mainView === 'history'
+                    ? 'bg-primary text-white'
+                    : 'border border-orange-200 bg-white text-orange-900/80'
+                }`}
+              >
+                히스토리
+              </button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {['전체', '반찬', '요리', '공동구매', '배달'].map((tab) => (
-                <button
-                  key={tab}
-                  type="button"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold ${
-                    tab === '전체'
-                      ? 'bg-primary text-white'
-                      : 'border border-orange-200 bg-white text-orange-900/80'
-                  }`}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
+            {mainView === 'feed' ? (
+              <>
+                <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
+                  <p className="text-sm font-semibold text-primary">환영해요!</p>
+                  <h2 className="mt-1 text-2xl font-extrabold text-orange-950">내 주변 식구 찾기</h2>
+                  <p className="mt-2 text-orange-900/75">
+                    관심사와 위치를 바탕으로 식생활을 함께 해결할 식구 그룹을 추천해드려요.
+                  </p>
+                </div>
 
-            <div className="grid gap-4">
-              {[
-                {
-                  title: '반찬 나눠요! 🍱',
-                  body: '장조림/멸치볶음 같이 나눌 분 찾습니다. 같은 단지면 저녁 전달 가능해요.',
-                  tag: '반찬',
-                },
-                {
-                  title: '식재료 나누고 가끔 같이 만들어 먹어요 🍝',
-                  body: '파스타 좋아하는 분! 면/소스/치즈 소분하고 주말에 같이 만들어 먹어요.',
-                  tag: '요리',
-                },
-                {
-                  title: '같이 코스트코에 장보러 가서 재료 나눠요 🛒',
-                  body: '돼지고기/과일 같이 사고 소분할 분 모집합니다. 3~4명 정도 생각 중이에요.',
-                  tag: '공동구매',
-                },
-                {
-                  title: '배달비 아끼려고 같이 시켜요 🍕',
-                  body: '오늘 저녁 피자 같이 주문할 분! 배달비 나눠서 부담해요.',
-                  tag: '배달',
-                },
-              ].map((group) => (
-                <article
-                  key={group.title}
-                  className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
-                    <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
-                      {group.tag}
-                    </span>
+                <div className="flex flex-wrap gap-2">
+                  {['전체', '반찬', '요리', '공동구매', '배달'].map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={`rounded-full px-4 py-2 text-sm font-semibold ${
+                        tab === '전체'
+                          ? 'bg-primary text-white'
+                          : 'border border-orange-200 bg-white text-orange-900/80'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid gap-4">
+                  {[
+                    {
+                      title: '반찬 나눠요! 🍱',
+                      body: '장조림/멸치볶음 같이 나눌 분 찾습니다. 같은 단지면 저녁 전달 가능해요.',
+                      tag: '반찬',
+                    },
+                    {
+                      title: '식재료 나누고 가끔 같이 만들어 먹어요 🍝',
+                      body: '파스타 좋아하는 분! 면/소스/치즈 소분하고 주말에 같이 만들어 먹어요.',
+                      tag: '요리',
+                    },
+                    {
+                      title: '같이 코스트코에 장보러 가서 재료 나눠요 🛒',
+                      body: '돼지고기/과일 같이 사고 소분할 분 모집합니다. 3~4명 정도 생각 중이에요.',
+                      tag: '공동구매',
+                    },
+                    {
+                      title: '배달비 아끼려고 같이 시켜요 🍕',
+                      body: '오늘 저녁 피자 같이 주문할 분! 배달비 나눠서 부담해요.',
+                      tag: '배달',
+                    },
+                  ].map((group) => (
+                    <article
+                      key={group.title}
+                      className="rounded-3xl border border-orange-100 bg-white p-5 shadow-sm"
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="text-lg font-bold text-orange-950">{group.title}</h3>
+                        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-primary">
+                          {group.tag}
+                        </span>
+                      </div>
+                      <p className="mb-4 text-orange-900/75">{group.body}</p>
+                      <button
+                        type="button"
+                        className="rounded-full bg-orange-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-primary"
+                      >
+                        참여하기
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
+                    <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-4xl">
+                      🐔
+                    </div>
+                    <h3 className="text-xl font-bold text-primary">Happy Diner</h3>
+                    <p className="text-sm text-orange-900/70">Level: Grand Sikgu Master</p>
+                  </article>
+                  <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
+                    <p className="text-sm text-orange-900/70">Total Meals Shared</p>
+                    <p className="mt-2 text-4xl font-extrabold text-primary">15</p>
+                  </article>
+                  <article className="rounded-3xl border border-orange-100 bg-white p-6 text-center shadow-sm">
+                    <p className="text-sm text-orange-900/70">Active Sikgus</p>
+                    <p className="mt-2 text-4xl font-extrabold text-primary">3</p>
+                  </article>
+                </div>
+
+                <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-extrabold text-primary">Previous Sikgus 🤝</h2>
+                    <button type="button" className="text-sm font-semibold text-primary">
+                      See All
+                    </button>
                   </div>
-                  <p className="mb-4 text-orange-900/75">{group.body}</p>
-                  <button
-                    type="button"
-                    className="rounded-full bg-orange-950 px-5 py-2 text-sm font-bold text-white transition hover:bg-primary"
-                  >
-                    참여하기
-                  </button>
-                </article>
-              ))}
-            </div>
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Coding Slave', detail: '반찬 나눔 5회', time: 'Shared 2d ago', emoji: '🐔' },
+                      {
+                        name: 'CodingCoding',
+                        detail: '코스트코 장보기 2회',
+                        time: 'Shared 1w ago',
+                        emoji: '🐥',
+                      },
+                      { name: 'Linuxias', detail: '첫 식구 대기 중', time: 'Say Hello!', emoji: '🐣' },
+                    ].map((person) => (
+                      <article
+                        key={person.name}
+                        className="flex items-center justify-between rounded-2xl border border-orange-50 bg-white p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-2xl">
+                            {person.emoji}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-orange-950">{person.name}</h4>
+                            <p className="text-sm text-orange-900/70">{person.detail}</p>
+                          </div>
+                        </div>
+                        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-900/70">
+                          {person.time}
+                        </span>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </section>
         )}
       </main>
