@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sikgu | Location Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-primary": "#ffb68d",
+                    "on-secondary-fixed": "#2d1604",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#004d63",
+                    "surface-bright": "#fff8f6",
+                    "primary-fixed": "#ffdbc9",
+                    "on-surface": "#241914",
+                    "accent-fresh": "#4ADE80",
+                    "surface-container-highest": "#f3ded5",
+                    "inverse-surface": "#3a2e28",
+                    "tertiary-fixed": "#bce9ff",
+                    "surface-tint": "#9a4600",
+                    "on-primary-fixed": "#321200",
+                    "tertiary": "#006783",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-fixed-variant": "#5f402a",
+                    "border-warm": "#FFF7ED",
+                    "text-main": "#2D2D2D",
+                    "inverse-on-surface": "#ffede5",
+                    "on-background": "#241914",
+                    "primary-fixed-dim": "#ffb68d",
+                    "on-surface-variant": "#564338",
+                    "on-primary-container": "#682d00",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-dim": "#ead6cd",
+                    "on-tertiary-container": "#004457",
+                    "background-warm": "#FFFAF5",
+                    "on-tertiary-fixed": "#001f29",
+                    "secondary-fixed": "#ffdcc5",
+                    "outline-variant": "#ddc1b3",
+                    "background": "#fff8f6",
+                    "primary": "#9a4600",
+                    "on-secondary-container": "#7a5840",
+                    "on-tertiary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#00b7e7",
+                    "on-error-container": "#93000a",
+                    "surface-card": "#FFFFFF",
+                    "secondary-fixed-dim": "#eabea0",
+                    "outline": "#8a7266",
+                    "surface-container-high": "#f9e4db",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed-dim": "#63d3ff",
+                    "secondary-container": "#ffd1b3",
+                    "surface": "#fff8f6",
+                    "on-primary-fixed-variant": "#763300",
+                    "surface-container": "#feeae0",
+                    "surface-variant": "#f3ded5",
+                    "primary-container": "#ff8a3d",
+                    "error": "#ba1a1a",
+                    "secondary": "#79573f",
+                    "surface-container-low": "#fff1eb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xs": "8px",
+                    "xl": "32px",
+                    "lg": "24px",
+                    "sm": "12px",
+                    "md": "16px",
+                    "base": "4px",
+                    "container-padding": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Nunito Sans"],
+                    "body-md": ["Nunito Sans"],
+                    "body-lg": ["Nunito Sans"],
+                    "headline-xl": ["Nunito Sans"],
+                    "headline-md": ["Nunito Sans"],
+                    "label-md": ["Nunito Sans"]
+            },
+            "fontSize": {
+                    "headline-lg": ["28px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "500"}],
+                    "headline-xl": ["36px", {"lineHeight": "1.2", "fontWeight": "800"}],
+                    "headline-md": ["22px", {"lineHeight": "1.4", "fontWeight": "700"}],
+                    "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Nunito Sans', sans-serif;
+            background-color: #fff8f6;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .soft-shadow {
+            box-shadow: 0 8px 30px rgba(255, 138, 61, 0.08);
+        }
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-surface-bright text-on-surface min-h-screen flex flex-col items-center">
+<!-- Top Navigation Placeholder (Hidden for focused journey) -->
+<!-- Suppression logic applied: Onboarding flow -->
+<main class="w-full max-w-md px-container-padding pt-xl pb-32 flex flex-col min-h-screen">
+<!-- Progress Bar with Chick Emoji -->
+<div class="w-full mb-xl">
+<div class="relative w-full h-2 bg-surface-container-highest rounded-full overflow-visible">
+<!-- Progress Line -->
+<div class="absolute left-0 top-0 h-full w-[75%] bg-primary-container rounded-full"></div>
+<!-- Chick Character Progress Anchor -->
+<div class="absolute top-1/2 left-[75%] -translate-y-1/2 -translate-x-1/2 bg-white rounded-full p-1 shadow-md border-2 border-primary-container">
+<span class="text-xl">🐥</span>
+</div>
+</div>
+<div class="flex justify-between mt-2 px-1">
+<span class="font-label-md text-label-md text-on-surface-variant">Step 3 of 4</span>
+<span class="font-label-md text-label-md text-primary font-bold">거의 다 왔어요!</span>
+</div>
+</div>
+<!-- Header Section -->
+<header class="mb-xl">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-xs">식구님은 어디에 사시나요? 🏠</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">함께 식사할 수 있는 이웃을 찾아볼게요.</p>
+</header>
+<!-- Visual Map Illustration / Bento Box Style Layout -->
+<section class="mb-xl relative group">
+<div class="w-full h-56 rounded-xl overflow-hidden soft-shadow bg-surface-container-low border border-outline-variant/30 flex items-center justify-center relative">
+<img class="w-full h-full object-cover opacity-60" data-alt="A stylized, minimalist 3D map illustration with soft pastel colors including cream and warm orange. The map features simplified toy-like building shapes and a large, glowing warm orange location pin in the center. The lighting is high-key and bright, evoking a friendly and hospitable neighborhood atmosphere. The visual style is clean and soft-tactile, consistent with a modern mobile application design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhFfdD3sqPuKa_XBYBDSx1sp-QOndRY3kS9J-yaA-A_yfBwaOsEkNI5V2LutroWybiR-YxF9vxzInQ0gQF-2p4WKKnsSsZJ1osxFqf0jiV3nhy0a7Jr2QRwzPDDJLx8u9KVR8E4K25Wata2uAnun4sCVy1mF6ni41EwaEVxkAKkbxu5jj4KQMXooeFJwKuZ228tqbFqoWroJrR1TaReXvb1BLziDssUvOeL8F_M7hCZC5367q-Kdwy-DAk7zNR_eXhF5C6zVQLPZg"/>
+<!-- Floating Pin Overlay -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="bg-primary-container text-white rounded-full p-4 shadow-lg scale-110 border-4 border-white">
+<span class="material-symbols-outlined text-4xl" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+</div>
+<!-- Neighborhood Badge -->
+<div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-sm border border-orange-50 flex items-center gap-2">
+<span class="text-lg">🍚</span>
+<span class="font-label-md text-label-md text-on-surface font-bold">행복한 우리 동네</span>
+</div>
+</div>
+</section>
+<!-- Search Input Section -->
+<section class="flex flex-col gap-md">
+<div class="relative">
+<div class="absolute left-4 top-1/2 -translate-y-1/2 text-primary">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</div>
+<input class="w-full pl-12 pr-4 py-5 bg-white border-2 border-transparent focus:border-primary-container focus:ring-0 rounded-2xl font-body-md text-body-md text-on-surface soft-shadow placeholder:text-outline outline-none transition-all" placeholder="단지명 / 오피스텔명 / 건물명 입력" type="text"/>
+</div>
+<!-- Suggestion / Helpful Tip -->
+<div class="flex items-start gap-3 p-4 bg-secondary-container/30 rounded-2xl border border-secondary-container/50">
+<span class="text-xl">📍</span>
+<p class="font-body-md text-body-md text-on-secondary-container text-sm">건물명을 입력하면 주변의 활발한 식구 모임을 확인할 수 있어요.</p>
+</div>
+</section>
+<!-- Navigation Buttons -->
+<footer class="fixed bottom-0 left-0 w-full px-container-padding pb-xl pt-6 bg-gradient-to-t from-surface-bright via-surface-bright to-transparent max-w-md mx-auto">
+<button class="w-full bg-primary-container hover:bg-primary text-white font-headline-md text-headline-md py-5 rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2">완료하기 <span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span></button>
+<button class="w-full mt-4 text-on-surface-variant font-label-md text-label-md py-2 hover:text-primary transition-colors">나중에 설정하기</button>
+</footer>
+</main>
+<!-- Map Location Marker for background context -->
+<div class="hidden" data-location="Seoul, South Korea" style=""></div>
+</body></html>
